@@ -35,10 +35,12 @@ extension View {
         switch type {
         case .library:
             #if !SKIP
+            #if os(iOS)
             sheet(isPresented: isPresented) {
                 PhotoLibraryPicker(sourceType: .photoLibrary, selectedImageURL: selectedImageURL)
                     .presentationDetents([.medium])
             }
+            #endif
             #else
             let pickImageLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.GetContent()) { uri in
                 // uri e.g.: content://media/picker/0/com.android.providers.media.photopicker/media/1000000025
@@ -58,9 +60,11 @@ extension View {
 
         case .camera:
             #if !SKIP
+            #if os(iOS)
             fullScreenCover(isPresented: isPresented) {
                 PhotoLibraryPicker(sourceType: .camera, selectedImageURL: selectedImageURL)
             }
+            #endif
             #else
             let imageURL = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".png")
 
@@ -99,6 +103,7 @@ extension View {
 
 
 #if !SKIP
+#if os(iOS)
 struct PhotoLibraryPicker: UIViewControllerRepresentable {
     let sourceType: UIImagePickerController.SourceType
     @Binding var selectedImageURL: URL?
@@ -163,4 +168,5 @@ struct PhotoLibraryPicker: UIViewControllerRepresentable {
         }
     }
 }
+#endif
 #endif
