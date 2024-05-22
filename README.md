@@ -39,6 +39,39 @@ struct MediaButton : View {
 }
 ```
 
+### Permissions
+
+In order to access the device's photos or media library, you will need to 
+declare the permissions in the app's metadata.
+
+On iOS this can be done by editing the `Darwin/AppName.xcconfig` file and adding the lines:
+
+```
+INFOPLIST_KEY_NSCameraUsageDescription = "This app needs to access the camera";
+INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app needs to access the photo library.";
+```
+
+On Android, the `app/src/main/AndroidManifest.xml` file will need to be edited to include 
+permissions as follows:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <application>…</application>
+</manifest>
+```
+
+
 
 ## Building
 
