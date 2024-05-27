@@ -9,16 +9,19 @@ import Foundation
 
 let logger: Logger = Logger(subsystem: "SkipKit", category: "Tests")
 
+// SKIP INSERT: @org.junit.runner.RunWith(androidx.test.ext.junit.runners.AndroidJUnit4::class)
 @available(macOS 13, *)
 final class SkipKitTests: XCTestCase {
     func testSkipKit() throws {
         logger.log("running testSkipKit")
-        XCTAssertEqual(1 + 2, 3, "basic test")
-        
-        // load the TestData.json file from the Resources folder and decode it into a struct
-        let resourceURL: URL = try XCTUnwrap(Bundle.module.url(forResource: "TestData", withExtension: "json"))
-        let testData = try JSONDecoder().decode(TestData.self, from: Data(contentsOf: resourceURL))
-        XCTAssertEqual("SkipKit", testData.testModuleName)
+
+        if isRobolectric || isJava {
+            return // Robolectric does not automatically add a ShadowPackageManager, so calls result in an NPE
+        }
+
+        // on iOS, this seems to correspond to the version of XCUnit current running
+        XCTAssertEqual("15.4", ProcessInfo.processInfo.appVersionString)
+        XCTAssertEqual(0, ProcessInfo.processInfo.appVersionNumber)
     }
 }
 
