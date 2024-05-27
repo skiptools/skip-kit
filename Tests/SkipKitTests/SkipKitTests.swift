@@ -19,8 +19,8 @@ final class SkipKitTests: XCTestCase {
             return // Robolectric does not automatically add a ShadowPackageManager, so calls result in an NPE
         }
 
-        // on iOS, this seems to correspond to the version of XCUnit current running
-        XCTAssertEqual("15.4", ProcessInfo.processInfo.appVersionString)
+        // on iOS, this seems to correspond to the version of XCUnit current running, like 15.2 or 15.4
+        XCTAssertNotEqual("", ProcessInfo.processInfo.appVersionString)
         XCTAssertEqual(0, ProcessInfo.processInfo.appVersionNumber)
     }
 }
