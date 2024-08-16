@@ -8,3 +8,4 @@ let logger: Logger = Logger(subsystem: "skip.kit", category: "SkipKit") // adb l
 
 public class SkipKitModule {
 }
+

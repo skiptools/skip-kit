@@ -23,6 +23,7 @@ final class SkipKitTests: XCTestCase {
         XCTAssertNotEqual("", ProcessInfo.processInfo.appVersionString)
         XCTAssertEqual(0, ProcessInfo.processInfo.appVersionNumber)
     }
+
 }
 
 struct TestData : Codable, Hashable {
