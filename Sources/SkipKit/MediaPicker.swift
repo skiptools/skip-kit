@@ -156,14 +156,11 @@ struct PhotoLibraryPicker: UIViewControllerRepresentable {
             } else {
                 logger.info("imagePickerController: no image found in keys: \(info.keys)")
             }
-
-            picker.dismiss(animated: true)
             parent.dismiss()
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
             logger.info("imagePickerControllerDidCancel")
-            picker.dismiss(animated: true)
             parent.dismiss()
         }
     }
