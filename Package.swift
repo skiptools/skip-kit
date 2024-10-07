@@ -14,8 +14,8 @@ let package = Package(
         .library(name: "SkipKit", targets: ["SkipKit"]),
     ],
     dependencies: [
-        .package(url: "https://source.skip.tools/skip.git", from: "1.0.4"),
-        .package(url: "https://source.skip.tools/skip-ui.git", from: "1.0.0")
+        .package(url: "https://source.skip.tools/skip.git", from: "1.1.8"),
+        .package(url: "https://source.skip.tools/skip-ui.git", from: "1.12.0")
     ],
     targets: [
         .target(name: "SkipKit", dependencies: [.product(name: "SkipUI", package: "skip-ui")], resources: [.process("Resources")], plugins: [.plugin(name: "skipstone", package: "skip")]),
