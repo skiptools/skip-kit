@@ -52,26 +52,63 @@ INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app needs to access the pho
 ```
 
 On Android, the `app/src/main/AndroidManifest.xml` file will need to be edited to include 
-permissions as follows:
+camera permissions as well as a FileProvider implementation so the camera can share a Uri with the app. For example:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <!-- features and permissions needed in order to use the camera and read/write photos -->
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
     <uses-feature
         android:name="android.hardware.camera.autofocus"
         android:required="false" />
-
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-
-    <application>…</application>
+    <application
+        android:label="${PRODUCT_NAME}"
+        android:name=".AndroidAppMain"
+        android:supportsRtl="true"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|fontScale|fontWeightAdjustment|keyboard|layoutDirection|locale|mcc|navigation|smallestScreenSize|touchscreen|uiMode"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- needed in order for the camera to be able to share the photo with the app -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
 </manifest>
 ```
 
+In addition to editing the manifest, you must also manually create the `xml/file_paths` reference from the manifest's provider. This is done by creating the folder `Android/app/src/main/res/xml` in your Skip project and adding a file `file_paths.xml` with the following contents:
 
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-path name="my_images" path="." />
+    <cache-path name="*" path="." />
+</paths>
+```
+
+For an example of a properly configured project, see the [Photo Chat](https://github.com/skiptools/skipapp-photochat) sample application.
 
 ## Building
 
