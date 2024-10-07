@@ -66,15 +66,15 @@ extension View {
             }
             #endif
             #else
-            let imageURL = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".png")
+            var imageURL: android.net.Uri? = nil
 
             // alternatively, we could use TakePicturePreview, which returns a Bitmap
-            let takePictureLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.TakePicture()) { uri in
+            let takePictureLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.TakePicture()) { success in
                 // uri e.g.: content://media/picker/0/com.android.providers.media.photopicker/media/1000000025
                 isPresented.wrappedValue = false // clear the presented bit
-                logger.log("takePictureLauncher: \(uri) from \(imageURL)")
-                if let uri = uri {
-                    selectedImageURL.wrappedValue = URL(platformValue: java.net.URI.create(uri.toString()))
+                logger.log("takePictureLauncher: success: \(success) from \(imageURL)")
+                if success == true, let imageURL = imageURL {
+                    selectedImageURL.wrappedValue = URL(string: imageURL.toString())
                 }
             }
 
@@ -91,7 +91,14 @@ extension View {
                         logger.log("takePictureLauncher: requesting Manifest.permission.CAMERA permission")
                         ActivityCompat.requestPermissions(context as Activity, perms, PERM_REQUEST_CAMERA)
                     } else {
+                        let storageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+                        let ext = ".jpg"
+                        let tmpFile = java.io.File.createTempFile("SkipKit_\(UUID().uuidString)", ext, storageDir)
+                        logger.log("takePictureLauncher: create tmpFile: \(tmpFile)")
+
+                        imageURL = androidx.core.content.FileProvider.getUriForFile(context as Activity, context.getPackageName() + ".fileprovider", tmpFile)
                         logger.log("takePictureLauncher: takePictureLauncher.launch: \(imageURL)")
+
                         takePictureLauncher.launch(android.net.Uri.parse(imageURL.kotlin().toString()))
                     }
                 }
