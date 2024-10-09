@@ -108,7 +108,7 @@ In addition to editing the manifest, you must also manually create the `xml/file
 </paths>
 ```
 
-For an example of a properly configured project, see the [Photo Chat](https://github.com/skiptools/skipapp-photochat) sample application.
+For an example of a properly configured project, see the Photo Chat sample application.
 
 ## Building
 
