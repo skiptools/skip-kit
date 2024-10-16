@@ -9,7 +9,6 @@ import Foundation
 
 let logger: Logger = Logger(subsystem: "SkipKit", category: "Tests")
 
-// SKIP INSERT: @org.junit.runner.RunWith(androidx.test.ext.junit.runners.AndroidJUnit4::class)
 @available(macOS 13, *)
 final class SkipKitTests: XCTestCase {
     func testSkipKit() throws {
