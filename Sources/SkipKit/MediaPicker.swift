@@ -8,6 +8,7 @@ import SwiftUI
 #if SKIP
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.pm.PackageManager
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +26,21 @@ import androidx.core.content.ContextCompat.startActivity
 public enum MediaPickerType {
     case camera, library
 }
+
+#if SKIP
+// https://stackoverflow.com/questions/51640154/android-view-contextthemewrapper-cannot-be-cast-to-android-app-activity/63360115#63360115
+extension Context {
+    func asActivity() -> Activity {
+        if let activity = self as? Activity {
+            return activity
+        } else if let wrapper = self as? android.content.ContextWrapper {
+            return wrapper.baseContext.asActivity()
+        } else {
+            fatalError("could not extract activity from: \(self)")
+        }
+    }
+}
+#endif
 
 extension View {
     /// Enables a media picker interface for the camera or photo library can be activated through the `isPresented` binding, and which returns the selected image through the `selectedImageURL` binding.
@@ -89,14 +105,14 @@ extension View {
                     var perms = listOf(Manifest.permission.CAMERA).toTypedArray()
                     if ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED {
                         logger.log("takePictureLauncher: requesting Manifest.permission.CAMERA permission")
-                        ActivityCompat.requestPermissions(context as Activity, perms, PERM_REQUEST_CAMERA)
+                        ActivityCompat.requestPermissions(context.asActivity(), perms, PERM_REQUEST_CAMERA)
                     } else {
                         let storageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
                         let ext = ".jpg"
                         let tmpFile = java.io.File.createTempFile("SkipKit_\(UUID().uuidString)", ext, storageDir)
                         logger.log("takePictureLauncher: create tmpFile: \(tmpFile)")
 
-                        imageURL = androidx.core.content.FileProvider.getUriForFile(context as Activity, context.getPackageName() + ".fileprovider", tmpFile)
+                        imageURL = androidx.core.content.FileProvider.getUriForFile(context.asActivity(), context.getPackageName() + ".fileprovider", tmpFile)
                         logger.log("takePictureLauncher: takePictureLauncher.launch: \(imageURL)")
 
                         takePictureLauncher.launch(android.net.Uri.parse(imageURL.kotlin().toString()))
