@@ -1,3 +1,11 @@
+## 0.1.5
+
+Released 2024-12-07
+
+  - Merge pull request #6 from skiptools/fix-processinfo
+  - Update PackageManager.GET_META_DATA to handle new nullability in compileSDK 35
+  - Merge pull request #5 from skiptools/context-cast-fix
+
 ## 0.1.3
 
 Released 2024-10-07
