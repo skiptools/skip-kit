@@ -14,17 +14,8 @@ final class SkipKitTests: XCTestCase {
     func testSkipKit() throws {
         logger.log("running testSkipKit")
 
-        if isRobolectric || isJava {
-            return // Robolectric does not automatically add a ShadowPackageManager, so calls result in an NPE
-        }
-
         // on iOS, this seems to correspond to the version of XCUnit current running, like 15.2 or 15.4
         XCTAssertNotEqual("", ProcessInfo.processInfo.appVersionString)
-        XCTAssertEqual(0, ProcessInfo.processInfo.appVersionNumber)
+        XCTAssertEqual(0, ProcessInfo.processInfo.appVersionNumber ?? 0)
     }
-
-}
-
-struct TestData : Codable, Hashable {
-    var testModuleName: String
 }

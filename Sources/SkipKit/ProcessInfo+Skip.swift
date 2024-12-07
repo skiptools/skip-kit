@@ -11,7 +11,7 @@ public extension ProcessInfo {
     /// On iOS, uses the `CFBundleShortVersionString` of the main `Bundle's Info.plist`
     ///
     /// On Android, uses the `versionName` property of the `android.content.pm.PackageManager`
-    var appVersionString: String {
+    var appVersionString: String? {
         _appVersionString
     }
 
@@ -20,7 +20,7 @@ public extension ProcessInfo {
     /// On iOS, uses the `CFBundleVersion` of the main `Bundle's Info.plist`
     ///
     /// On Android, uses the `versionCode` property of the `android.content.pm.PackageManager`
-    var appVersionNumber: Int {
+    var appVersionNumber: Int? {
         _appVersionNumber
     }
 }
@@ -33,18 +33,18 @@ private let packageInfo: android.content.pm.PackageInfo = {
 }()
 #endif
 
-private let _appVersionString: String = {
+private let _appVersionString: String? = {
     #if !SKIP
-    Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+    Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
     #else
     packageInfo.versionName
     #endif
 }()
 
 
-private let _appVersionNumber: Int = {
+private let _appVersionNumber: Int? = {
     #if !SKIP
-    Bundle.main.infoDictionary?["CFBundleVersion"] as? Int ?? 0
+    Bundle.main.infoDictionary?["CFBundleVersion"] as? Int
     #else
     packageInfo.versionCode
     #endif
