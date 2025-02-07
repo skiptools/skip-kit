@@ -47,6 +47,7 @@ extension View {
     ///
     /// On iOS, this camera selector will be presented in a `fullScreenCover` view, whereas the media library browser will be presented in a `sheet`.
     /// On Android, the camera and library browser will be activated through Intents after querying for the necessary permissions.
+    // SKIP @nobridge
     @ViewBuilder public func withMediaPicker(type: MediaPickerType, isPresented: Binding<Bool>, selectedImageURL: Binding<URL?>) -> some View {
         switch type {
         case .library:
