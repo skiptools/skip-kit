@@ -2,7 +2,7 @@
 // under the terms of the GNU Lesser General Public License 3.0
 // as published by the Free Software Foundation https://fsf.org
 
-import SwiftUI
+import Foundation
 
 /// Provides general information for a Skip app.
 public extension ProcessInfo {
