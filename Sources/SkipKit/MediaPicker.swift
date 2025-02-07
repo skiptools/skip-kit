@@ -1,7 +1,7 @@
 // This is free software: you can redistribute and/or modify it
 // under the terms of the GNU Lesser General Public License 3.0
 // as published by the Free Software Foundation https://fsf.org
-
+#if !SKIP_BRIDGE
 import Foundation
 import SwiftUI
 
@@ -47,6 +47,7 @@ extension View {
     ///
     /// On iOS, this camera selector will be presented in a `fullScreenCover` view, whereas the media library browser will be presented in a `sheet`.
     /// On Android, the camera and library browser will be activated through Intents after querying for the necessary permissions.
+    // SKIP @nobridge
     @ViewBuilder public func withMediaPicker(type: MediaPickerType, isPresented: Binding<Bool>, selectedImageURL: Binding<URL?>) -> some View {
         switch type {
         case .library:
@@ -188,5 +189,6 @@ struct PhotoLibraryPicker: UIViewControllerRepresentable {
         }
     }
 }
+#endif
 #endif
 #endif

@@ -1,5 +1,7 @@
 # Configuration file for https://skip.tools project
-#
+skip:
+  bridging: true
+
 # Kotlin dependencies and Gradle build options for this module can be configured here
 #build:
 #  contents:
