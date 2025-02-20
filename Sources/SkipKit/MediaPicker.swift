@@ -3,9 +3,7 @@
 // as published by the Free Software Foundation https://fsf.org
 #if !SKIP_BRIDGE
 import Foundation
-#if canImport(SwiftUI)
 import SwiftUI
-#endif
 
 #if SKIP
 import android.Manifest
