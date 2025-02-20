@@ -2,25 +2,6 @@
 
 This Skip module enhances the `SkipUI` package with commonly-used features.
 
-## Network Reachability
-
-You can check whether the device is currenly able to access the network with:
-
-```swift
-Reachability.isNetworkReachable
-```
-
-### Permissions
-
-In order to access the device's photos or media library, you will need to 
-declare the permissions in the app's metadata.
-
-On Android, the `app/src/main/AndroidManifest.xml` file will need to be edited to include:
-
-```
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-```
-
 ## Camera and Media selection
 
 The `View.withMediaPicker(type:isPresented:selectedImageURL:)` extension function
