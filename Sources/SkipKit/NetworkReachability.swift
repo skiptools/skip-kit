@@ -13,6 +13,7 @@ import android.os.Build
 #endif
 
 /// Provides general information for a Skip app.
+@available(*, deprecated, message: "relocated to the skip-device framework")
 public class Reachability {
 
     /// Returns true if the network is currently reachable
