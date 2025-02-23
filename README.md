@@ -1,6 +1,48 @@
 # SkipKit
 
-This Skip module enhances the `SkipUI` package with commonly-used features.
+This Skip module enhances the `SkipUI` package with commonly-used features,
+such as a permission checker and a picker for photos and other media.
+
+## PermissionManager
+
+The `PermissionManager` provides the ability to request device permissions.
+
+For example:
+
+```swift
+import SkipKit
+import SkipDevice
+
+let locationProvider = LocationProvider()
+
+if await PermissionManager.requestPermission(.ACCESS_FINE_LOCATION) == true {
+    let location = try await locationProvider.fetchCurrentLocation()
+}
+```
+
+In addition to symbolic constants, there are also functions for requesting
+specific permissions with various parameters:
+
+```swift
+static func requestCameraPermission() async -> Bool
+static func requestRecordAudioPermission() async -> Bool
+static func requestPhotoLibraryPermission(readWrite: Bool = true) async -> Bool
+static func requestContactsPermission(readWrite: Bool = false) async throws -> Bool
+static func requestCalendarPermission(readWrite: Bool = false) async throws -> Bool
+static func requestReminderPermission(readWrite: Bool = false) async throws -> Bool
+static func requestPostNotificationPermission(alert: Bool = true, sound: Bool = true, badge: Bool = true) async throws -> Bool
+```
+
+To request an arbitrary Android permission for which there may be no
+iOS equivalent, you can pass the string literal. For a list of common permission literals, see
+[https://developer.android.com/reference/android/Manifest.permission](https://developer.android.com/reference/android/Manifest.permission).
+
+For example, to request the SMS sending permission:
+
+```swift
+let granted = await PermissionManager.requestPermission("android.permission.SEND_SMS")
+```
+
 
 ## Camera and Media selection
 
@@ -39,7 +81,7 @@ struct MediaButton : View {
 }
 ```
 
-### Permissions
+### Camera and Media Permissions
 
 In order to access the device's photos or media library, you will need to 
 declare the permissions in the app's metadata.
