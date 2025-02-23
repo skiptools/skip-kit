@@ -6,8 +6,8 @@ import Foundation
 import SwiftUI
 #if !SKIP
 import Photos
-import Contacts
-import EventKit
+// import Contacts // TODO: create framework skip-contacts
+// import EventKit // TODO: create framework skip-calendar
 import AVFoundation
 import CoreLocation
 import UserNotifications
@@ -36,10 +36,10 @@ public class PermissionManager {
         #if !SKIP
         switch permission {
         case .POST_NOTIFICATIONS: return .unknown // queryPostNotificationPermission() // this is async, so we cannot call it
-        case .READ_CONTACTS: return queryContactsPermission(readWrite: false)
-        case .WRITE_CONTACTS: return queryContactsPermission(readWrite: true)
-        case .READ_CALENDAR: return queryCalendarPermission(readWrite: false)
-        case .WRITE_CALENDAR: return queryCalendarPermission(readWrite: true)
+        //case .READ_CONTACTS: return queryContactsPermission(readWrite: false)
+        //case .WRITE_CONTACTS: return queryContactsPermission(readWrite: true)
+        //case .READ_CALENDAR: return queryCalendarPermission(readWrite: false)
+        //case .WRITE_CALENDAR: return queryCalendarPermission(readWrite: true)
         case .READ_EXTERNAL_STORAGE: return queryPhotoLibraryPermission(readWrite: false)
         case .WRITE_EXTERNAL_STORAGE: return queryPhotoLibraryPermission(readWrite: true)
         case .RECORD_AUDIO: return queryRecordAudioPermission()
@@ -72,10 +72,10 @@ public class PermissionManager {
         #if !SKIP
         switch permission {
         case .POST_NOTIFICATIONS: return await (try? requestPostNotificationPermission()) ?? .unknown
-        case .READ_CONTACTS: return await (try? requestContactsPermission(readWrite: false)) ?? .unknown
-        case .WRITE_CONTACTS: return await (try? requestContactsPermission(readWrite: true)) ?? .unknown
-        case .READ_CALENDAR: return await (try? requestCalendarPermission(readWrite: false)) ?? .unknown
-        case .WRITE_CALENDAR: return await (try? requestCalendarPermission(readWrite: true)) ?? .unknown
+        //case .READ_CONTACTS: return await (try? requestContactsPermission(readWrite: false)) ?? .unknown
+        //case .WRITE_CONTACTS: return await (try? requestContactsPermission(readWrite: true)) ?? .unknown
+        //case .READ_CALENDAR: return await (try? requestCalendarPermission(readWrite: false)) ?? .unknown
+        //case .WRITE_CALENDAR: return await (try? requestCalendarPermission(readWrite: true)) ?? .unknown
         case .READ_EXTERNAL_STORAGE: return await requestPhotoLibraryPermission(readWrite: false)
         case .WRITE_EXTERNAL_STORAGE: return await requestPhotoLibraryPermission(readWrite: true)
         case .RECORD_AUDIO: return await requestRecordAudioPermission()
@@ -197,6 +197,9 @@ public class PermissionManager {
     }
     #endif
 
+#if false // TODO: create framework skip-contacts
+    // ITMS-90683: Missing purpose string in Info.plist - Your app’s code references one or more APIs that access sensitive user data, or the app has one or more entitlements that permit such access. The Info.plist file for the “XXX.app” bundle should contain a NSContactsUsageDescription key with a user-facing purpose string explaining clearly and completely why your app needs the data. If you’re using external libraries or SDKs, they may reference APIs that require a purpose string. While your app might not use these APIs, a purpose string is still required. For details, visit: https://developer.apple.com/documentation/uikit/protecting_the_user_s_privacy/requesting_access_to_protected_resources.
+
     public static func queryContactsPermission(readWrite: Bool = false) -> PermissionAuthorization {
         #if SKIP
         return queryPermission(readWrite ? .WRITE_CONTACTS : .READ_CONTACTS)
@@ -232,6 +235,11 @@ public class PermissionManager {
         return queryContactsPermission(readWrite: readWrite)
         #endif
     }
+#endif
+
+#if false // TODO: create framework skip-calendar
+    // ITMS-90683: Missing purpose string in Info.plist - Your app’s code references one or more APIs that access sensitive user data, or the app has one or more entitlements that permit such access. The Info.plist file for the “XXX.app” bundle should contain a NSCalendarsUsageDescription key with a user-facing purpose string explaining clearly and completely why your app needs the data. If you’re using external libraries or SDKs, they may reference APIs that require a purpose string. While your app might not use these APIs, a purpose string is still required. For details, visit: https://developer.apple.com/documentation/uikit/protecting_the_user_s_privacy/requesting_access_to_protected_resources.
+
 
     public static func queryCalendarPermission(readWrite: Bool = false) -> PermissionAuthorization {
         #if SKIP
@@ -304,6 +312,7 @@ public class PermissionManager {
         return queryEventKitPermission(for: eventType)
     }
     #endif
+#endif
 
     public static func queryPhotoLibraryPermission(readWrite: Bool = true) -> PermissionAuthorization {
         #if SKIP
