@@ -24,13 +24,29 @@ In addition to symbolic constants, there are also functions for requesting
 specific permissions with various parameters:
 
 ```swift
-static func requestCameraPermission() async -> Bool
-static func requestRecordAudioPermission() async -> Bool
-static func requestPhotoLibraryPermission(readWrite: Bool = true) async -> Bool
-static func requestContactsPermission(readWrite: Bool = false) async throws -> Bool
-static func requestCalendarPermission(readWrite: Bool = false) async throws -> Bool
-static func requestReminderPermission(readWrite: Bool = false) async throws -> Bool
-static func requestPostNotificationPermission(alert: Bool = true, sound: Bool = true, badge: Bool = true) async throws -> Bool
+static func queryLocationPermission(precise: Bool, always: Bool) -> PermissionAuthorization
+static func requestLocationPermission(precise: Bool, always: Bool) async -> PermissionAuthorization
+
+static func queryPostNotificationPermission() async -> PermissionAuthorization
+static func requestPostNotificationPermission(alert: Bool = true, sound: Bool = true, badge: Bool = true) async throws -> PermissionAuthorization
+
+static func queryCameraPermission() -> PermissionAuthorization
+static func requestCameraPermission() async -> PermissionAuthorization
+
+static func queryRecordAudioPermission() -> PermissionAuthorization
+static func requestRecordAudioPermission() async -> PermissionAuthorization
+
+static func queryContactsPermission(readWrite: Bool) -> PermissionAuthorization
+static func requestContactsPermission(readWrite: Bool) async throws -> PermissionAuthorization
+
+static func queryCalendarPermission(readWrite: Bool) -> PermissionAuthorization
+static func requestCalendarPermission(readWrite: Bool) async throws -> PermissionAuthorization
+
+static func queryReminderPermission(readWrite: Bool) -> PermissionAuthorization
+static func requestReminderPermission(readWrite: Bool) async throws -> PermissionAuthorization
+
+static func queryPhotoLibraryPermission(readWrite: Bool) -> PermissionAuthorization
+static func requestPhotoLibraryPermission(readWrite: Bool) async -> PermissionAuthorization
 ```
 
 To request an arbitrary Android permission for which there may be no
