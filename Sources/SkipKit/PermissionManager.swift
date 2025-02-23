@@ -288,7 +288,7 @@ public class PermissionManager {
             return status
         }
         let eventStore = EKEventStore()
-        if #available(iOS 17.0, *) {
+        if #available(iOS 17.0, macOS 14.0, *) {
             // On iOS 17 and later, this method doesn’t prompt for access and immediately calls the completion block with an error.
             switch eventType {
             case .event:
