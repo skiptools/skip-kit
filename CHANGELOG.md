@@ -1,3 +1,18 @@
+## 0.3.0
+
+Released 2025-02-23
+
+  - Merge pull request #9 from skiptools/permission-manager
+  - Add import UserNotifications
+  - Add individual permission request functions
+  - Add PermissionManager.requestPermission
+  - Merge pull request #8 from skiptools/deprecate-reachability
+  - Deprecate Reachability class in favor of skip-device ReachabilityService
+  - Disable bridging for now
+  - Disable bridging for now
+  - Fix canImport checks to accommodate SKIP
+  - Import checks so we can compile on Android
+
 ## 0.2.1
 
 Released 2025-02-14
