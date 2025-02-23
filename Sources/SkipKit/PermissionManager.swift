@@ -9,6 +9,7 @@ import Photos
 import Contacts
 import EventKit
 import AVFoundation
+import UserNotifications
 import SystemConfiguration
 #else
 import android.Manifest
