@@ -1,6 +1,6 @@
 # SkipKit
 
-This Skip module enhances the `SkipUI` package with commonly-used features,
+This [Skip Lite](https://skip.tools) module enhances the `SkipUI` package with commonly-used features,
 such as a permission checker and a picker for photos and other media.
 
 ## PermissionManager
@@ -58,7 +58,6 @@ For example, to request the SMS sending permission:
 ```swift
 let granted = await PermissionManager.requestPermission("android.permission.SEND_SMS")
 ```
-
 
 ## Camera and Media selection
 
