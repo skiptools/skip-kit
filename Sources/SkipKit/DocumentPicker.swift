@@ -39,6 +39,7 @@ extension View {
     ///   - selectedDocumentURL: the URL of the selected file
     ///   - filename: the filename of the selected file
     ///   - mimeType: the mimeType of the selected file
+    // SKIP @nobridge
     @ViewBuilder public func withDocumentPicker(isPresented: Binding<Bool>, selectedDocumentURL: Binding<URL?>, filename: Binding<String?>, mimeType: Binding<String?> ) -> some View {
 #if SKIP
         let context = LocalContext.current
@@ -61,33 +62,18 @@ extension View {
                     // To be able to access the file from another part of the app it needs to be copied in tha cached directory:
                     if let storageDir = context.cacheDir, let url = URL(string: storageDir.path) {
                         let filemanager = FileManager.default
-                        let destinationFile = url.appendingPathComponent(filename.wrappedValue!)
-                        if filemanager.fileExists(atPath: destinationFile.path) {
-                            try? filemanager.removeItem(at: destinationFile)
-                        }
+                        let destinationFileURL = url.appendingPathComponent(filename.wrappedValue!)
                         
-                        let sourceURL = URL(string: uri.toString())!
+                        if filemanager.fileExists(atPath: destinationFileURL.path) {
+                            try? filemanager.removeItem(at: destinationFileURL)
+                        }
+                                                
                         let inputStream = resolver.openInputStream(uri)!
-                        let bufferedInputStream = java.io.BufferedInputStream(inputStream)
+                        let outputFile = java.io.File(destinationFileURL.path)
+                        let outputStream = java.io.FileOutputStream(outputFile)
+                        inputStream.copyTo(outputStream)
                         
-                        let outputFile = java.io.File(destinationFile.path)
-                        let outputStream = java.io.FileOutputStream(outputFile) //try! FileHandle(forWritingTo: destinationFile).fileHandleForWriting
-                        let bufferedOutputStream = java.io.BufferedOutputStream(outputStream)
-                        var buffer = ByteArray(1024)
-                        var bytesRead: Int
-                        
-                        while(true) {
-                            bytesRead = try! bufferedInputStream.read(buffer)
-                            if bytesRead == -1 {
-                                bufferedOutputStream.flush()
-                                break
-                            }
-                            
-                            bufferedOutputStream.write(buffer)
-                            bufferedOutputStream.flush()
-                        }
-                        
-                        selectedDocumentURL.wrappedValue = destinationFile
+                        selectedDocumentURL.wrappedValue = destinationFileURL
                     } else {
                         selectedDocumentURL.wrappedValue = URL(platformValue: java.net.URI.create(uri.toString()))
                     }
