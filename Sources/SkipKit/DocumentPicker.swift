@@ -73,6 +73,9 @@ extension View {
                         let outputStream = java.io.FileOutputStream(outputFile)
                         inputStream.copyTo(outputStream)
                         
+                        outputStream.close()
+                        inputStream.close()
+                        
                         selectedDocumentURL.wrappedValue = destinationFileURL
                     } else {
                         selectedDocumentURL.wrappedValue = URL(platformValue: java.net.URI.create(uri.toString()))
