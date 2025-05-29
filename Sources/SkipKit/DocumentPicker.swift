@@ -26,24 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat.startActivity
 
-public struct UTType: Equatable, Hashable {
-    var identifier: String
-    var preferredMIMEType: String?
-    
-    public init?(mimeType: String, conformingTo supertype: UTType? = .data) {
-            self.identifier = mimeType
-            self.preferredMIMEType = mimeType
-        }
-}
-
-public extension UTType {
-    public static let data = UTType(mimeType: "data/...")
-    public static let pdf = UTType(mimeType: "application/pdf")
-    public static let image = UTType(mimeType: "image/*")
-    public static let text = UTType(mimeType: "text/*")
-    public static let doc = UTType(mimeType: "application/msword")
-}
-
 #endif
 
 extension View {

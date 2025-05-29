@@ -169,8 +169,19 @@ For an example of a properly configured project, see the Photo Chat sample appli
 
 ## Document Picker
 
-The `View.withDocumentPicker(isPresented: Binding<Bool>, selectedDocumentURL: Binding<URL?>, filename: Binding<String?>, mimeType: Binding<String?>)` extension function can be used to select a document of either `pdf` or `image` from the device to use in the App. 
-On iOS it will use an instance of `FileImporter` to display the system file picker, essentially allowing to select a file from the Files application, while on Android it relies on the the system document picker via the Actvity result for the `ACTION_OPEN_DOCUMENT`. Once the user selects a file it will receive an `uri`, that need to ne parsed to be used outside the scope of the caller. For doing so it will copy the file inside the App cache folder and expose the cached url instead of the original picked file url. 
+The `View.withDocumentPicker(isPresented: Binding<Bool>, allowedContentTypes: [UTType], selectedDocumentURL: Binding<URL?>, selectedFilename: Binding<String?>, selectedFileMimeType: Binding<String?>)` extension function can be used to select a document of the specified UTType from the device to use in the App. 
+
+On iOS it will use an instance of `FileImporter` to display the system file picker, essentially allowing to select a file from the Files application, while on Android it relies on the the system document picker via the Activity result for the `ACTION_OPEN_DOCUMENT`. Once the user selects a file it will receive an `uri`, that need to be parsed to be used outside the scope of the caller. For doing so it will copy the file inside the App cache folder and expose the cached url instead of the original picked file url. 
+
+For example:
+
+```swift
+Button("Pick Document") {
+    presentPreview = true
+}
+.buttonStyle(.borderedProminent)
+.withDocumentPicker(isPresented: $presentPreview, allowedContentTypes: [.image, .pdf], selectedDocumentURL: $selectedDocument, selectedFilename: $filename, selectedFileMimeType: $mimeType)
+```
 
 ## Document Preview
 
