@@ -6,7 +6,9 @@
 public struct UTType: Equatable, Hashable {
     var identifier: String
     var preferredMIMEType: String?
-    
+
+    // “This release does not yet support bridging optional inits”
+    // SKIP @nobridge
     public init?(identifier: String, mimeType: String?, conformingTo supertype: UTType? = .data) {
             self.identifier = identifier
             self.preferredMIMEType = mimeType
