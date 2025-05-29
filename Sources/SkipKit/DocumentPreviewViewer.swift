@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only WITH LGPL-3.0-linking-exception
-//
-//  SwiftUIView.swift
-//  skip-kit
-//
-//  Created by Simone Figlie' on 23/05/25.
-//
-
+#if !SKIP_BRIDGE
 import SwiftUI
 import Foundation
 
@@ -82,3 +76,4 @@ extension View {
         #endif
     }
 }
+#endif

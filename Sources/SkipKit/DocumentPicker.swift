@@ -1,10 +1,4 @@
 // SPDX-License-Identifier: LGPL-3.0-only WITH LGPL-3.0-linking-exception
-//  DocumentPicker.swift
-//  skip-kit
-//
-//  Created by Simone Figlie' on 20/05/25.
-//
-
 #if !SKIP_BRIDGE
 import Foundation
 import SwiftUI
@@ -119,4 +113,3 @@ extension View {
     }
 }
 #endif
-

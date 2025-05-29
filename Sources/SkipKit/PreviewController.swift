@@ -1,10 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only WITH LGPL-3.0-linking-exception
-//
-// PreviewController.swift
-// skip-kit
-//
-// created by Simone Figlie' on 17/02/25.
-
+#if !SKIP_BRIDGE
 #if !SKIP
 #if os(iOS)
 import Foundation
@@ -57,5 +52,6 @@ class Coordinator: QLPreviewControllerDataSource {
         parent.isPresented = false
     }
 }
+#endif
 #endif
 #endif
