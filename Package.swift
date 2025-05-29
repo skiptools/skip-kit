@@ -5,7 +5,6 @@
 // Swift Package, Sources, and Tests into an
 // Android Gradle Project with Kotlin sources and JUnit tests.
 import PackageDescription
-import Foundation
 
 let package = Package(
     name: "skip-kit",
@@ -15,8 +14,8 @@ let package = Package(
         .library(name: "SkipKit", targets: ["SkipKit"]),
     ],
     dependencies: [
-        .package(url: "https://source.skip.tools/skip.git", from: "1.2.32"),
-        .package(url: "https://source.skip.tools/skip-ui.git", from: "1.26.1")
+        .package(url: "https://source.skip.tools/skip.git", from: "1.5.14"),
+        .package(url: "https://source.skip.tools/skip-ui.git", from: "1.28.23")
     ],
     targets: [
         .target(name: "SkipKit", dependencies: [.product(name: "SkipUI", package: "skip-ui")], resources: [.process("Resources")], plugins: [.plugin(name: "skipstone", package: "skip")]),
@@ -24,10 +23,10 @@ let package = Package(
     ]
 )
 
-if ProcessInfo.processInfo.environment["SKIP_BRIDGE"] ?? "0" != "0" {
-    package.dependencies += [.package(url: "https://source.skip.tools/skip-bridge.git", "0.0.0"..<"2.0.0")]
+if Context.environment["SKIP_BRIDGE"] ?? "0" != "0" {
+    package.dependencies += [.package(url: "https://source.skip.tools/skip-fuse-ui.git", "0.0.0"..<"2.0.0")]
     package.targets.forEach({ target in
-        target.dependencies += [.product(name: "SkipBridge", package: "skip-bridge")]
+        target.dependencies += [.product(name: "SkipFuseUI", package: "skip-fuse-ui")]
     })
     // all library types must be dynamic to support bridging
     package.products = package.products.map({ product in
