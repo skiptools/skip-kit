@@ -25,7 +25,25 @@ import androidx.activity.result.contract.ActivityResultContracts.TakePicture
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat.startActivity
-import android.provider.MediaStore
+
+public struct UTType: Equatable, Hashable {
+    var identifier: String
+    var preferredMIMEType: String?
+    
+    public init?(mimeType: String, conformingTo supertype: UTType? = .data) {
+            self.identifier = mimeType
+            self.preferredMIMEType = mimeType
+        }
+}
+
+public extension UTType {
+    public static let data = UTType(mimeType: "data/...")
+    public static let pdf = UTType(mimeType: "application/pdf")
+    public static let image = UTType(mimeType: "image/*")
+    public static let text = UTType(mimeType: "text/*")
+    public static let doc = UTType(mimeType: "application/msword")
+}
+
 #endif
 
 extension View {
@@ -40,7 +58,7 @@ extension View {
     ///   - filename: the filename of the selected file
     ///   - mimeType: the mimeType of the selected file
     // SKIP @nobridge
-    @ViewBuilder public func withDocumentPicker(isPresented: Binding<Bool>, selectedDocumentURL: Binding<URL?>, filename: Binding<String?>, mimeType: Binding<String?> ) -> some View {
+    @ViewBuilder public func withDocumentPicker(isPresented: Binding<Bool>, allowedContentTypes: [UTType], selectedDocumentURL: Binding<URL?>, selectedFilename: Binding<String?>, selectedFileMimeType: Binding<String?> ) -> some View {
 #if SKIP
         let context = LocalContext.current
         
@@ -49,6 +67,7 @@ extension View {
             logger.log(message: "selected document uri: \(uri)")
             if let uri = uri {
                 let resolver = context.contentResolver
+                                            
                 if let query = resolver.query(uri, nil, nil, nil, nil) {
                     let nameIndex = query.getColumnIndexOrThrow(android.provider.OpenableColumns.DISPLAY_NAME)
                     let mimetypeIndex = query.getColumnIndexOrThrow(android.provider.DocumentsContract.Document.COLUMN_MIME_TYPE)
@@ -56,13 +75,13 @@ extension View {
                     let name = query.getString(nameIndex)
                     let type = query.getString(mimetypeIndex)
                     
-                    filename.wrappedValue = name
-                    mimeType.wrappedValue = type
+                    selectedFilename.wrappedValue = name
+                    selectedFileMimeType.wrappedValue = type
                     
                     // To be able to access the file from another part of the app it needs to be copied in tha cached directory:
                     if let storageDir = context.cacheDir, let url = URL(string: storageDir.path) {
                         let filemanager = FileManager.default
-                        let destinationFileURL = url.appendingPathComponent(filename.wrappedValue!)
+                        let destinationFileURL = url.appendingPathComponent(selectedFilename.wrappedValue!)
                         
                         if filemanager.fileExists(atPath: destinationFileURL.path) {
                             try? filemanager.removeItem(at: destinationFileURL)
@@ -86,12 +105,17 @@ extension View {
         
         return onChange(of: isPresented.wrappedValue) { oldValue, presented in
             if presented == true {
-                let mimeTypes = kotlin.arrayOf("application/pdf", "image/*")
+                let parsedMimeTypes: [String] = allowedContentTypes.map({ $0.preferredMIMEType ?? ""})
+                var types = kotlin.arrayOf("")
+                for type in parsedMimeTypes {
+                    types += type
+                }
+                let mimeTypes = types //kotlin.arrayOf("application/pdf", "image/*")
                 pickDocumentLauncher.launch(mimeTypes)
             }
         }
 #else
-        fileImporter(isPresented: isPresented, allowedContentTypes: [.text, .pdf, .image]) { result in
+        fileImporter(isPresented: isPresented, allowedContentTypes: allowedContentTypes) { result in
             switch result {
             case .success(let file):
                 // gain access to the directory

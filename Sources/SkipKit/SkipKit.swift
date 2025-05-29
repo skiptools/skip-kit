@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only WITH LGPL-3.0-linking-exception
+#if !SKIP
+@_exported import UniformTypeIdentifiers
+#endif
 #if !SKIP_BRIDGE
 import OSLog
 
