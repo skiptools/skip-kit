@@ -167,6 +167,29 @@ In addition to editing the manifest, you must also manually create the `xml/file
 
 For an example of a properly configured project, see the Photo Chat sample application.
 
+## Document Picker
+
+The `View.withDocumentPicker(isPresented: Binding<Bool>, allowedContentTypes: [UTType], selectedDocumentURL: Binding<URL?>, selectedFilename: Binding<String?>, selectedFileMimeType: Binding<String?>)` extension function can be used to select a document of the specified UTType from the device to use in the App. 
+
+On iOS it will use an instance of `FileImporter` to display the system file picker, essentially allowing to select a file from the Files application, while on Android it relies on the the system document picker via the Activity result for the `ACTION_OPEN_DOCUMENT`. Once the user selects a file it will receive an `uri`, that need to be parsed to be used outside the scope of the caller. For doing so it will copy the file inside the App cache folder and expose the cached url instead of the original picked file url. 
+
+For example:
+
+```swift
+Button("Pick Document") {
+    presentPreview = true
+}
+.buttonStyle(.borderedProminent)
+.withDocumentPicker(isPresented: $presentPreview, allowedContentTypes: [.image, .pdf], selectedDocumentURL: $selectedDocument, selectedFilename: $filename, selectedFileMimeType: $mimeType)
+```
+
+## Document Preview
+
+The `View.withDocumentPreview(isPresented: Binding<Bool>, documentURL: URL?, filename: String?, type: String?)` extension function can be used to preview a document available to the app (either selected with the provided `Document Picker` or downloaded locally by the App). 
+On iOS it will use an instance of `QLPreviewController` to display the file at the provided url while on Android it will open an Intent chooser for selecting the appropriate app for the provided file mime type. 
+On iOS there's no need to provide a filename or a mime type, but sometimes on Android is necessary (for example when selecting a document using the document picker). On Android if no mime type is supplied it will try to guess it by the file url. If no mime type can be found the application chooser will be empty. 
+A file provider (like the one used for using the `MediaPicker`) is necessary for the Intent to correctly pass reading permission to the receiving app. As long as your Skip already implements the FileProvider and the `file_paths.xml` as described in the `Camera and Media Permission` section there's nothing else needed, otherwise you need to follow the instructions in the mentioned section. 
+
 ## Building
 
 This project is a free Swift Package Manager module that uses the

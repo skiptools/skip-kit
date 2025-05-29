@@ -105,6 +105,7 @@ extension View {
                     if ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED {
                         logger.log("takePictureLauncher: requesting Manifest.permission.CAMERA permission")
                         ActivityCompat.requestPermissions(context.asActivity(), perms, PERM_REQUEST_CAMERA)
+                        isPresented.wrappedValue = false
                     } else {
                         let storageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
                         let ext = ".jpg"
