@@ -19,7 +19,6 @@ import androidx.activity.result.contract.ActivityResultContracts.TakePicture
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat.startActivity
-
 #endif
 
 extension View {
@@ -33,9 +32,8 @@ extension View {
     ///   - selectedDocumentURL: the URL of the selected file
     ///   - filename: the filename of the selected file
     ///   - mimeType: the mimeType of the selected file
-    // SKIP @nobridge
     @ViewBuilder public func withDocumentPicker(isPresented: Binding<Bool>, allowedContentTypes: [UTType], selectedDocumentURL: Binding<URL?>, selectedFilename: Binding<String?>, selectedFileMimeType: Binding<String?> ) -> some View {
-#if SKIP
+        #if SKIP
         let context = LocalContext.current
         
         let pickDocumentLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.OpenDocument()) { uri in
@@ -90,7 +88,9 @@ extension View {
                 pickDocumentLauncher.launch(mimeTypes)
             }
         }
-#else
+
+        #else // !SKIP
+
         fileImporter(isPresented: isPresented, allowedContentTypes: allowedContentTypes) { result in
             switch result {
             case .success(let file):
@@ -109,7 +109,7 @@ extension View {
                 isPresented.wrappedValue = false
             }
         }
-#endif
+        #endif
     }
 }
 #endif

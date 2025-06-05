@@ -9,7 +9,6 @@ public extension ProcessInfo {
     /// On iOS, uses the `CFBundleShortVersionString` of the main `Bundle's Info.plist`
     ///
     /// On Android, uses the `versionName` property of the `android.content.pm.PackageManager`
-    // SKIP @nobridge
     var appVersionString: String? {
         _appVersionString
     }
@@ -19,7 +18,6 @@ public extension ProcessInfo {
     /// On iOS, uses the `CFBundleVersion` of the main `Bundle's Info.plist`
     ///
     /// On Android, uses the `versionCode` property of the `android.content.pm.PackageManager`
-    // SKIP @nobridge
     var appVersionNumber: Int? {
         _appVersionNumber
     }
