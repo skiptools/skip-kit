@@ -66,7 +66,7 @@ public class PermissionManager {
     ///   - permission: the permission, such as `PermissionType.CAMERA`
     ///   - showRationale: an optional async callback to invoke when the system determies that a rationale should be displayed for the permission check
     /// - Returns: true if the permission was granted, false if denied or there was an error making the request
-    /* SKIP @nobridge */ public static func requestPermission(_ permission: PermissionType, showRationale: (() async -> Bool)? = nil) async -> PermissionAuthorization {
+    /* SKIP @nobridge */ public static func requestPermission(_ permission: PermissionType, showRationale: (() async -> Bool)?) async -> PermissionAuthorization {
         #if !SKIP
         switch permission {
         case .POST_NOTIFICATIONS: return await (try? requestPostNotificationPermission()) ?? .unknown
@@ -91,6 +91,14 @@ public class PermissionManager {
             return .denied
         }
         #endif
+    }
+
+    /// Requests the given permission.
+    /// - Parameters:
+    ///   - permission: the permission, such as `PermissionType.CAMERA`
+    /// - Returns: true if the permission was granted, false if denied or there was an error making the request
+    /* SKIP @nodispatch */public static func requestPermission(_ permission: PermissionType) async -> PermissionAuthorization {
+        await requestPermission(permission, showRationale: nil)
     }
 
     /// Queries whether push notifications have been permitted

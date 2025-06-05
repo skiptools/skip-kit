@@ -30,7 +30,6 @@ extension View {
     ///   - isPresented: binding della variabile di stato che indica se il compoemente è visualizzato o meno
     ///   - documentURL: URL del file che si intente visualizzare
     /// - Returns: su iOS un QLPreviewController mentre su Android viene lanciato in Intent ACTION_VIEW per la scelta dell'App da utilizzare.
-    // SKIP @nobridge
     @ViewBuilder public func withDocumentPreview(isPresented: Binding<Bool>, documentURL: URL?, filename: String? = nil, type: String? = nil) -> some View {
         #if !SKIP
         #if os(iOS)
