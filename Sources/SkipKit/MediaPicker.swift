@@ -88,6 +88,7 @@ extension View {
             }
             #endif
             #else
+            let context = LocalContext.current
             var imageURL: android.net.Uri? = nil
 
             let takePictureLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.TakePicturePreview()) { bitmap in
@@ -144,8 +145,6 @@ extension View {
             }
 
             // FIXME: 05-20 20:29:41.435  8964  8964 E AndroidRuntime: java.lang.SecurityException: Permission Denial: starting Intent { act=android.media.action.IMAGE_CAPTURE flg=0x3 cmp=com.android.camera2/com.android.camera.CaptureActivity clip={text/uri-list hasLabel(0) {}} (has extras) } from ProcessRecord{c5fb1f 8964:skip.photo.chat/u0a190} (pid=8964, uid=10190) with revoked permission android.permission.CAMERA
-
-            let context = LocalContext.current
 
             let PERM_REQUEST_CAMERA = 642
 
