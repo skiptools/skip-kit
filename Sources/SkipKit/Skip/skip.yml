@@ -4,8 +4,8 @@ skip:
   bridging: true
 
 # Kotlin dependencies and Gradle build options for this module can be configured here
-#build:
-#  contents:
-#    - block: 'dependencies'
-#      contents:
-#        - 'implementation("androidx.compose.runtime:runtime")'
+build:
+  contents:
+    - block: 'dependencies'
+      contents:
+        - 'implementation("androidx.exifinterface:exifinterface:1.4.1")'

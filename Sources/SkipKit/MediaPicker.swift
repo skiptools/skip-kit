@@ -8,6 +8,9 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.core.app.ActivityCompat
@@ -15,10 +18,15 @@ import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.GetContent
-import androidx.activity.result.contract.ActivityResultContracts.TakePicture
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat.startActivity
+import androidx.core.content.FileProvider
+import androidx.exifinterface.media.ExifInterface
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.FileOutputStream
+import java.io.File
 #endif
 
 public enum MediaPickerType {
@@ -82,13 +90,56 @@ extension View {
             #else
             var imageURL: android.net.Uri? = nil
 
-            // alternatively, we could use TakePicturePreview, which returns a Bitmap
-            let takePictureLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.TakePicture()) { success in
-                // uri e.g.: content://media/picker/0/com.android.providers.media.photopicker/media/1000000025
+            let takePictureLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.TakePicturePreview()) { bitmap in
                 isPresented.wrappedValue = false // clear the presented bit
-                logger.log("takePictureLauncher: success: \(success) from \(imageURL)")
-                if success == true, let imageURL = imageURL {
-                    selectedImageURL.wrappedValue = URL(string: imageURL.toString())
+                if let bitmap {
+                    var rotatedBitmap: Bitmap? = nil
+
+                    let outputStream = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                    let byteArray = ByteArrayInputStream(outputStream.toByteArray())
+                
+                    let ei: ExifInterface = ExifInterface(byteArray)
+                    let orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
+                    
+                    switch(orientation) {
+                        
+                    case ExifInterface.ORIENTATION_ROTATE_90:
+                        rotatedBitmap = rotateImage(bitmap, 90)
+                        break;
+                        
+                    case ExifInterface.ORIENTATION_ROTATE_180:
+                        rotatedBitmap = rotateImage(bitmap, 180)
+                        break;
+                        
+                    case ExifInterface.ORIENTATION_ROTATE_270:
+                        rotatedBitmap = rotateImage(bitmap, 270)
+                        break;
+                        
+                    default:
+                        rotatedBitmap = bitmap
+                    }
+                    
+                    do {
+                        let storageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+                        let ext = ".jpg"
+                        let tmpFile = File.createTempFile("SkipKit_\(UUID().uuidString)", ext, storageDir)
+                        logger.log("takePictureLauncher: create tmpFile: \(tmpFile)")
+
+                        imageURL = FileProvider.getUriForFile(context.asActivity(), context.getPackageName() + ".fileprovider", tmpFile)
+                        logger.log("takePictureLauncher: imageURL: \(imageURL)")
+                        
+                        // uri e.g.: content://media/picker/0/com.android.providers.media.photopicker/media/1000000025
+                        selectedImageURL.wrappedValue = URL(string: imageURL.toString())
+                        
+                        let outputStream = FileOutputStream(tmpFile)
+                        rotatedBitmap!.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                        outputStream.flush()
+                        outputStream.close()
+                        logger.log("takePictureLauncher: success: saved to \(imageURL)")
+                    } catch {
+                        logger.log("takePictureLauncher: Error writing rotated image: \(error)")
+                    }
                 }
             }
 
@@ -106,15 +157,7 @@ extension View {
                         ActivityCompat.requestPermissions(context.asActivity(), perms, PERM_REQUEST_CAMERA)
                         isPresented.wrappedValue = false
                     } else {
-                        let storageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
-                        let ext = ".jpg"
-                        let tmpFile = java.io.File.createTempFile("SkipKit_\(UUID().uuidString)", ext, storageDir)
-                        logger.log("takePictureLauncher: create tmpFile: \(tmpFile)")
-
-                        imageURL = androidx.core.content.FileProvider.getUriForFile(context.asActivity(), context.getPackageName() + ".fileprovider", tmpFile)
-                        logger.log("takePictureLauncher: takePictureLauncher.launch: \(imageURL)")
-
-                        takePictureLauncher.launch(android.net.Uri.parse(imageURL.kotlin().toString()))
+                        takePictureLauncher.launch(input = nil)
                     }
                 }
             }
@@ -122,6 +165,15 @@ extension View {
         }
     }
 }
+
+#if SKIP
+func rotateImage(source: Bitmap, angle: Int) -> Bitmap {
+    let matrix: Matrix = Matrix()
+    matrix.postRotate(angle.toFloat())
+    return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(),
+                               matrix, true)
+}
+#endif
 
 #if !SKIP
 #if os(iOS)
