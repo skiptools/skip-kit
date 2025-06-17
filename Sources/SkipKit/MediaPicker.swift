@@ -23,7 +23,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat.startActivity
 import androidx.exifinterface.media.ExifInterface
 import java.io.ByteArrayInputStream
-import java.io.FileOutputStream
 #endif
 
 public enum MediaPickerType {
