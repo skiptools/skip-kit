@@ -21,12 +21,9 @@ import androidx.activity.result.contract.ActivityResultContracts.GetContent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat.startActivity
-import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
 import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.FileOutputStream
-import java.io.File
 #endif
 
 public enum MediaPickerType {
@@ -174,8 +171,7 @@ extension View {
 func rotateImage(source: Bitmap, angle: Int) -> Bitmap {
     let matrix: Matrix = Matrix()
     matrix.postRotate(angle.toFloat())
-    return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(),
-                               matrix, true)
+    return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true)
 }
 #endif
 
