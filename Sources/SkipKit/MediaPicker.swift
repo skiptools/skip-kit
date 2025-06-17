@@ -91,55 +91,52 @@ extension View {
             let context = LocalContext.current
             var imageURL: android.net.Uri? = nil
 
-            let takePictureLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.TakePicturePreview()) { bitmap in
+            let takePictureLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.TakePicture()) { success in
+                // uri e.g.: content://media/picker/0/com.android.providers.media.photopicker/media/1000000025
                 isPresented.wrappedValue = false // clear the presented bit
-                if let bitmap {
-                    var rotatedBitmap: Bitmap? = nil
-
-                    let outputStream = ByteArrayOutputStream()
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                    let byteArray = ByteArrayInputStream(outputStream.toByteArray())
-                
-                    let ei: ExifInterface = ExifInterface(byteArray)
-                    let orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
+                logger.log("takePictureLauncher: success: \(success) from \(imageURL)")
+                if success == true, let imageURL = imageURL {
+                    selectedImageURL.wrappedValue = URL(string: imageURL.toString())
                     
-                    switch(orientation) {
+                    // use byte array for stream re-use
+                    if let inputStream = context.contentResolver.openInputStream(imageURL!), let bytes = inputStream.readBytes() {
+                        let bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        let ei = ExifInterface(ByteArrayInputStream(bytes))
+                        let orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
+                        var rotatedBitmap: Bitmap? = nil
                         
-                    case ExifInterface.ORIENTATION_ROTATE_90:
-                        rotatedBitmap = rotateImage(bitmap, 90)
-                        break;
+                        switch(orientation) {
+                        case ExifInterface.ORIENTATION_ROTATE_90:
+                            rotatedBitmap = rotateImage(bitmap, 90)
+                            break;
+                        case ExifInterface.ORIENTATION_ROTATE_180:
+                            rotatedBitmap = rotateImage(bitmap, 180)
+                            break;
+                        case ExifInterface.ORIENTATION_ROTATE_270:
+                            rotatedBitmap = rotateImage(bitmap, 270)
+                            break;
+                        default:
+                            logger.log("takePictureLauncher: Image orientation is already upright: [\(orientation)]. Image orientation will not be post-processed.")
+                        }
                         
-                    case ExifInterface.ORIENTATION_ROTATE_180:
-                        rotatedBitmap = rotateImage(bitmap, 180)
-                        break;
-                        
-                    case ExifInterface.ORIENTATION_ROTATE_270:
-                        rotatedBitmap = rotateImage(bitmap, 270)
-                        break;
-                        
-                    default:
-                        rotatedBitmap = bitmap
-                    }
-                    
-                    do {
-                        let storageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
-                        let ext = ".jpg"
-                        let tmpFile = File.createTempFile("SkipKit_\(UUID().uuidString)", ext, storageDir)
-                        logger.log("takePictureLauncher: create tmpFile: \(tmpFile)")
-
-                        imageURL = FileProvider.getUriForFile(context.asActivity(), context.getPackageName() + ".fileprovider", tmpFile)
-                        logger.log("takePictureLauncher: imageURL: \(imageURL)")
-                        
-                        // uri e.g.: content://media/picker/0/com.android.providers.media.photopicker/media/1000000025
-                        selectedImageURL.wrappedValue = URL(string: imageURL.toString())
-                        
-                        let outputStream = FileOutputStream(tmpFile)
-                        rotatedBitmap!.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                        outputStream.flush()
-                        outputStream.close()
-                        logger.log("takePictureLauncher: success: saved to \(imageURL)")
-                    } catch {
-                        logger.log("takePictureLauncher: Error writing rotated image: \(error)")
+                        if let rotatedBitmap {
+                            do {
+                                if let outputStream = context.contentResolver.openOutputStream(imageURL!, "w") {
+                                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                                    outputStream.flush()
+                                    outputStream.close()
+                                    logger.log("takePictureLauncher: rotated image saved to \(imageURL)")
+                                } else {
+                                    logger.error("takePictureLauncher: Failed to open output stream for URI: \(imageURL!). Image orientation will not be post-processed.")
+                                }
+                            } catch {
+                                logger.warning("takePictureLauncher: Error writing rotated image: \(error). Image orientation will not be post-processed.")
+                            }
+                        } else {
+                            logger.warning("takePictureLauncher: No rotated image to save. Image orientation will not be post-processed.")
+                        }
+                    } else {
+                        logger.warning("takePictureLauncher: Failed to open input stream for URI: \(imageURL!). Image orientation will not be post-processed.")
                     }
                 }
             }
@@ -156,7 +153,15 @@ extension View {
                         ActivityCompat.requestPermissions(context.asActivity(), perms, PERM_REQUEST_CAMERA)
                         isPresented.wrappedValue = false
                     } else {
-                        takePictureLauncher.launch(input = nil)
+                        let storageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+                        let ext = ".jpg"
+                        let tmpFile = java.io.File.createTempFile("SkipKit_\(UUID().uuidString)", ext, storageDir)
+                        logger.log("takePictureLauncher: create tmpFile: \(tmpFile)")
+
+                        imageURL = androidx.core.content.FileProvider.getUriForFile(context.asActivity(), context.getPackageName() + ".fileprovider", tmpFile)
+                        logger.log("takePictureLauncher: takePictureLauncher.launch: \(imageURL)")
+
+                        takePictureLauncher.launch(android.net.Uri.parse(imageURL.kotlin().toString()))
                     }
                 }
             }
