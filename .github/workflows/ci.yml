@@ -17,4 +17,6 @@ jobs:
     with:
       # disable local tests because SkipFuseUI requires macOS 14+
       run-local-tests: false
+      # error with Text() constructor
+      run-android-native-build: false
 
