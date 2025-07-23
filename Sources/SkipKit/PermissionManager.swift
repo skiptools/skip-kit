@@ -359,7 +359,37 @@ public class PermissionManager {
 
     public static func queryLocationPermission(precise: Bool, always: Bool) -> PermissionAuthorization {
         #if SKIP
-        return queryPermission(precise ? .ACCESS_FINE_LOCATION : .ACCESS_COARSE_LOCATION)
+        let coarseLocationPermission = queryPermission(.ACCESS_COARSE_LOCATION)
+        let fineLocationPermission = queryPermission(.ACCESS_FINE_LOCATION)
+        let backgroundLocationPermission = queryPermission(.ACCESS_BACKGROUND_LOCATION)
+        
+        if always == true {
+            if backgroundLocationPermission == .authorized {
+                if precise == true {
+                    if fineLocationPermission == .authorized {
+                        return .authorized
+                    } else {
+                        return .limited
+                    }
+                } else {
+                    if coarseLocationPermission == .authorized {
+                        return .authorized
+                    }
+                }
+            }
+        } else {
+            if precise == true {
+                if fineLocationPermission == .authorized {
+                    return .authorized
+                }
+            } else {
+                if coarseLocationPermission == .authorized {
+                    return .authorized
+                }
+            }
+        }
+        return .unknown
+        
         #else
         let locationManager = LocationDelegate.shared.locationManager
         let status = locationManager.authorizationStatus
@@ -374,7 +404,7 @@ public class PermissionManager {
             return .denied
         case .authorizedAlways:
             if precise == true && accuracy == .reducedAccuracy {
-                // requested fullAccuracy, but only course was approved
+                // requested fullAccuracy, but only coarse was approved
                 return .limited
             } else {
                 return .authorized
@@ -384,7 +414,7 @@ public class PermissionManager {
                 // requested always, but only when in use was granted
                 return .limited
             } else if precise == true && accuracy == .reducedAccuracy {
-                // requested fullAccuracy, but only course was approved
+                // requested fullAccuracy, but only coarse was approved
                 return .limited
             } else {
                 return .authorized
@@ -395,13 +425,21 @@ public class PermissionManager {
         #endif
     }
 
-    /// Requests the media library permission
+    /// Requests location permission
     public static func requestLocationPermission(precise: Bool, always: Bool) async -> PermissionAuthorization {
         #if SKIP
-        return await requestPermission(precise ? .ACCESS_FINE_LOCATION : .ACCESS_COARSE_LOCATION)
+        let status = queryLocationPermission(precise: precise, always: always)
+        if status == .unknown {
+            return await requestPermission(precise ? .ACCESS_FINE_LOCATION : .ACCESS_COARSE_LOCATION)
+        } else if status == .limited && always == true {
+            // NOTE: for API 30+, this redirects directly to the app's settings Location permission. There is no UI popup in Android for this
+            return await PermissionManager.requestPermission(.ACCESS_BACKGROUND_LOCATION)
+        } else {
+            return status
+        }
         #else
         let status = queryLocationPermission(precise: precise, always: always)
-        if status != .unknown {
+        if status != .unknown && status != .limited {
             return status
         }
         await LocationDelegate.shared.requestPermission(always: always)
@@ -501,6 +539,7 @@ public extension PermissionType {
     static let POST_NOTIFICATIONS = PermissionType(androidPermissionName: "android.permission.POST_NOTIFICATIONS")
     static let ACCESS_FINE_LOCATION = PermissionType(androidPermissionName: "android.permission.ACCESS_FINE_LOCATION")
     static let ACCESS_COARSE_LOCATION = PermissionType(androidPermissionName: "android.permission.ACCESS_COARSE_LOCATION")
+    static let ACCESS_BACKGROUND_LOCATION = PermissionType(androidPermissionName: "android.permission.ACCESS_BACKGROUND_LOCATION")
 }
 
 #endif
