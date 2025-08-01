@@ -8,6 +8,9 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.core.app.ActivityCompat
@@ -15,10 +18,11 @@ import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.GetContent
-import androidx.activity.result.contract.ActivityResultContracts.TakePicture
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat.startActivity
+import androidx.exifinterface.media.ExifInterface
+import java.io.ByteArrayInputStream
 #endif
 
 public enum MediaPickerType {
@@ -80,21 +84,60 @@ extension View {
             }
             #endif
             #else
+            let context = LocalContext.current
             var imageURL: android.net.Uri? = nil
 
-            // alternatively, we could use TakePicturePreview, which returns a Bitmap
             let takePictureLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.TakePicture()) { success in
                 // uri e.g.: content://media/picker/0/com.android.providers.media.photopicker/media/1000000025
                 isPresented.wrappedValue = false // clear the presented bit
                 logger.log("takePictureLauncher: success: \(success) from \(imageURL)")
                 if success == true, let imageURL = imageURL {
                     selectedImageURL.wrappedValue = URL(string: imageURL.toString())
+                    
+                    // use byte array for stream re-use
+                    if let inputStream = context.contentResolver.openInputStream(imageURL!), let bytes = inputStream.readBytes() {
+                        let bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        let ei = ExifInterface(ByteArrayInputStream(bytes))
+                        let orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
+                        var rotatedBitmap: Bitmap? = nil
+                        
+                        switch(orientation) {
+                        case ExifInterface.ORIENTATION_ROTATE_90:
+                            rotatedBitmap = rotateImage(bitmap, 90)
+                            break;
+                        case ExifInterface.ORIENTATION_ROTATE_180:
+                            rotatedBitmap = rotateImage(bitmap, 180)
+                            break;
+                        case ExifInterface.ORIENTATION_ROTATE_270:
+                            rotatedBitmap = rotateImage(bitmap, 270)
+                            break;
+                        default:
+                            logger.log("takePictureLauncher: Image orientation is already upright: [\(orientation)]. Image orientation will not be post-processed.")
+                        }
+                        
+                        if let rotatedBitmap {
+                            do {
+                                if let outputStream = context.contentResolver.openOutputStream(imageURL!, "w") {
+                                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                                    outputStream.flush()
+                                    outputStream.close()
+                                    logger.log("takePictureLauncher: rotated image saved to \(imageURL)")
+                                } else {
+                                    logger.error("takePictureLauncher: Failed to open output stream for URI: \(imageURL!). Image orientation will not be post-processed.")
+                                }
+                            } catch {
+                                logger.warning("takePictureLauncher: Error writing rotated image: \(error). Image orientation will not be post-processed.")
+                            }
+                        } else {
+                            logger.warning("takePictureLauncher: No rotated image to save. Image orientation will not be post-processed.")
+                        }
+                    } else {
+                        logger.warning("takePictureLauncher: Failed to open input stream for URI: \(imageURL!). Image orientation will not be post-processed.")
+                    }
                 }
             }
 
             // FIXME: 05-20 20:29:41.435  8964  8964 E AndroidRuntime: java.lang.SecurityException: Permission Denial: starting Intent { act=android.media.action.IMAGE_CAPTURE flg=0x3 cmp=com.android.camera2/com.android.camera.CaptureActivity clip={text/uri-list hasLabel(0) {}} (has extras) } from ProcessRecord{c5fb1f 8964:skip.photo.chat/u0a190} (pid=8964, uid=10190) with revoked permission android.permission.CAMERA
-
-            let context = LocalContext.current
 
             let PERM_REQUEST_CAMERA = 642
 
@@ -122,6 +165,14 @@ extension View {
         }
     }
 }
+
+#if SKIP
+func rotateImage(source: Bitmap, angle: Int) -> Bitmap {
+    let matrix: Matrix = Matrix()
+    matrix.postRotate(angle.toFloat())
+    return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true)
+}
+#endif
 
 #if !SKIP
 #if os(iOS)
