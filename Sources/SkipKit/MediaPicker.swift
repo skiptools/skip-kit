@@ -20,7 +20,6 @@ import androidx.activity.result.contract.ActivityResultContracts.TakePicture
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat.startActivity
-import android.net.Uri
 #endif
 
 public enum MediaPickerType {
