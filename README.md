@@ -3,6 +3,46 @@
 This [Skip Lite](https://skip.tools) module enhances the `SkipUI` package with commonly-used features,
 such as a permission checker and a picker for photos and other media.
 
+## Setup
+
+To include this framework in your project, add the following
+dependency to your `Package.swift` file:
+
+```swift
+let package = Package(
+    name: "my-package",
+    products: [
+        .library(name: "MyProduct", targets: ["MyTarget"]),
+    ],
+    dependencies: [
+        .package(url: "https://source.skip.tools/skip-kit.git", "0.0.0"..<"2.0.0"),
+    ],
+    targets: [
+        .target(name: "MyTarget", dependencies: [
+            .product(name: "SkipKit", package: "skip-kit")
+        ])
+    ]
+)
+```
+
+## Cache
+
+The `Cache<Key, Value>` class manages a memory-pressure-aware cache that can be
+used for storing temporary values.
+
+Example usage:
+
+```swift
+// Create a cache that can store up to 100 bytes of Data instances
+// and will evict everything when the app is put in the background
+let cache = Cache<UUID, Data>(evictOnBackground: true, limit: 100, cost: \.count)
+
+cache.putValue(Data(count: 1), for: UUID()) // total cost = 1
+cache.putValue(Data(count: 99), for: UUID()) // total cost = 100
+cache.putValue(Data(count: 1), for: UUID()) // total cost = 101, so cache will evict older entries
+```
+
+
 ## PermissionManager
 
 The `PermissionManager` provides the ability to request device permissions.
