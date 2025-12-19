@@ -21,6 +21,15 @@ public extension ProcessInfo {
     var appVersionNumber: Int? {
         _appVersionNumber
     }
+
+    /// Returns the identifier of the app.
+    ///
+    /// On iOS, uses the `CFBundleIdentifier` of the main `Bundle's Info.plist`
+    ///
+    /// On Android, uses the `packageName` property of the `android.content.Context`
+    var appIdentifier: String? {
+        _appIdentifier
+    }
 }
 
 #if SKIP
@@ -39,12 +48,19 @@ private let _appVersionString: String? = {
     #endif
 }()
 
-
 private let _appVersionNumber: Int? = {
     #if !SKIP
     Bundle.main.infoDictionary?["CFBundleVersion"] as? Int
     #else
     packageInfo.versionCode
+    #endif
+}()
+
+private let _appIdentifier: String? = {
+    #if !SKIP
+    (Bundle.main.infoDictionary?["CFBundleIdentifier"] as? String)
+    #else
+    ProcessInfo.processInfo.androidContext.getPackageName()
     #endif
 }()
 
