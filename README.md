@@ -1,6 +1,6 @@
 # SkipKit
 
-This [Skip Lite](https://skip.tools) module enhances the `SkipUI` package with commonly-used features,
+This [Skip Lite](https://skip.dev) module enhances the `SkipUI` package with commonly-used features,
 such as a permission checker and a picker for photos and other media.
 
 ## Setup
@@ -15,7 +15,7 @@ let package = Package(
         .library(name: "MyProduct", targets: ["MyTarget"]),
     ],
     dependencies: [
-        .package(url: "https://source.skip.tools/skip-kit.git", "0.0.0"..<"2.0.0"),
+        .package(url: "https://source.skip.dev/skip-kit.git", "0.0.0"..<"2.0.0"),
     ],
     targets: [
         .target(name: "MyTarget", dependencies: [
@@ -233,7 +233,7 @@ A file provider (like the one used for using the `MediaPicker`) is necessary for
 ## Building
 
 This project is a free Swift Package Manager module that uses the
-[Skip](https://skip.tools) plugin to transpile Swift into Kotlin.
+[Skip](https://skip.dev) plugin to transpile Swift into Kotlin.
 
 Building the module requires that Skip be installed using 
 [Homebrew](https://brew.sh) with `brew install skiptools/skip/skip`.
@@ -258,7 +258,7 @@ The general flow for contributing to this and any other Skip package is:
 
 1. Fork this repository and enable actions from the "Actions" tab
 2. Check out your fork locally
-3. When developing alongside a Skip app, add the package to a [shared workspace](https://skip.tools/docs/contributing) to see your changes incorporated in the app
+3. When developing alongside a Skip app, add the package to a [shared workspace](https://skip.dev/docs/contributing) to see your changes incorporated in the app
 4. Push your changes to your fork and ensure the CI checks all pass in the Actions tab
 5. Add your name to the Skip [Contributor Agreement](https://github.com/skiptools/clabot-config)
 6. Open a Pull Request from your fork with a description of your changes
