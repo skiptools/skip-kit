@@ -230,7 +230,7 @@ On iOS it will use an instance of `QLPreviewController` to display the file at t
 On iOS there's no need to provide a filename or a mime type, but sometimes on Android is necessary (for example when selecting a document using the document picker). On Android if no mime type is supplied it will try to guess it by the file url. If no mime type can be found the application chooser will be empty. 
 A file provider (like the one used for using the `MediaPicker`) is necessary for the Intent to correctly pass reading permission to the receiving app. As long as your Skip already implements the FileProvider and the `file_paths.xml` as described in the `Camera and Media Permission` section there's nothing else needed, otherwise you need to follow the instructions in the mentioned section. 
 
-## WebBrowser: Lightweight In-App Browser
+## WebBrowser
 
 For cases where you want to display a web page without the full power and complexity of an embedded `WebView` (from [SkipWeb](https://github.com/skiptools/skip-web)), SkipKit provides the `View.openWebBrowser()` modifier. This opens a URL in the platform's native in-app browser:
 
