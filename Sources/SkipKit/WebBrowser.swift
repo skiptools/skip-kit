@@ -94,7 +94,7 @@ extension View {
         switch mode {
         case .launchBrowser:
             #if !SKIP
-            self.onChange(of: isPresented.wrappedValue) { oldPresented, newPresented in
+            self.onChange(of: isPresented.wrappedValue) { /*oldPresented,*/ newPresented in
                 if newPresented {
                     #if os(iOS)
                     UIApplication.shared.open(url)
