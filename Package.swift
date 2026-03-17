@@ -9,7 +9,7 @@ import PackageDescription
 let package = Package(
     name: "skip-kit",
     defaultLocalization: "en",
-    platforms: [.iOS(.v16), .macOS(.v13), .tvOS(.v16), .watchOS(.v9), .macCatalyst(.v16)],
+    platforms: [.iOS(.v16), .macOS(.v14), .tvOS(.v16), .watchOS(.v9), .macCatalyst(.v16)],
     products: [
         .library(name: "SkipKit", targets: ["SkipKit"]),
     ],
