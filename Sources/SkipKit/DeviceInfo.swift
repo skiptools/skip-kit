@@ -89,7 +89,7 @@ public final class DeviceInfo {
         let context = ProcessInfo.processInfo.androidContext
         let dm = context.getResources().getDisplayMetrics()
         return Double(dm.widthPixels) / Double(dm.density)
-        #elseif os(iOS)
+        #elseif canImport(UIKit)
         return Double(UIScreen.main.bounds.width)
         #elseif os(macOS)
         return Double(NSScreen.main?.frame.width ?? 0)
@@ -104,7 +104,7 @@ public final class DeviceInfo {
         let context = ProcessInfo.processInfo.androidContext
         let dm = context.getResources().getDisplayMetrics()
         return Double(dm.heightPixels) / Double(dm.density)
-        #elseif os(iOS)
+        #elseif canImport(UIKit)
         return Double(UIScreen.main.bounds.height)
         #elseif os(macOS)
         return Double(NSScreen.main?.frame.height ?? 0)
@@ -118,7 +118,7 @@ public final class DeviceInfo {
         #if SKIP
         let context = ProcessInfo.processInfo.androidContext
         return Double(context.getResources().getDisplayMetrics().density)
-        #elseif os(iOS)
+        #elseif canImport(UIKit)
         return Double(UIScreen.main.scale)
         #elseif os(macOS)
         return Double(NSScreen.main?.backingScaleFactor ?? 1.0)
@@ -145,7 +145,7 @@ public final class DeviceInfo {
         } else {
             return .phone
         }
-        #elseif os(iOS)
+        #elseif canImport(UIKit)
         switch UIDevice.current.userInterfaceIdiom {
         case .phone: return .phone
         case .pad: return .tablet
@@ -230,7 +230,7 @@ public final class DeviceInfo {
         let level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
         if level < 0 { return nil }
         return Double(level) / 100.0
-        #elseif os(iOS)
+        #elseif canImport(UIKit)
         let device = UIDevice.current
         let wasEnabled = device.isBatteryMonitoringEnabled
         device.isBatteryMonitoringEnabled = true
@@ -257,7 +257,7 @@ public final class DeviceInfo {
             return level >= 100 ? .full : .charging
         }
         return .unplugged
-        #elseif os(iOS)
+        #elseif canImport(UIKit)
         let device = UIDevice.current
         let wasEnabled = device.isBatteryMonitoringEnabled
         device.isBatteryMonitoringEnabled = true
