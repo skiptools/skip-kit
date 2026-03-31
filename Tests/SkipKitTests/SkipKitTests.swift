@@ -51,4 +51,45 @@ final class SkipKitTests: XCTestCase {
         XCTAssertTrue(cache.getValue(for: key1) == nil || cache.getValue(for: key2) == nil || cache.getValue(for: key3) == nil, "either key1 or key2 or key3 should have been evicted from the cache")
         // XCTAssertNotNil(cache.getValue(for: key4), "newly added key overflowing cache should have been retained") // not necessarily true
     }
+
+    func testMailComposerOptions() throws {
+        let opts = MailComposerOptions(
+            recipients: ["alice@example.com", "bob@example.com"],
+            ccRecipients: ["cc@example.com"],
+            bccRecipients: ["bcc@example.com"],
+            subject: "Test Subject",
+            body: "<h1>Hello</h1>",
+            isHTML: true
+        )
+        XCTAssertEqual(opts.recipients.count, 2)
+        XCTAssertEqual(opts.ccRecipients.count, 1)
+        XCTAssertEqual(opts.bccRecipients.count, 1)
+        XCTAssertEqual(opts.subject, "Test Subject")
+        XCTAssertEqual(opts.body, "<h1>Hello</h1>")
+        XCTAssertTrue(opts.isHTML)
+        XCTAssertEqual(opts.attachments.count, 0)
+
+        // Default options
+        let empty = MailComposerOptions()
+        XCTAssertTrue(empty.recipients.isEmpty)
+        XCTAssertNil(empty.subject)
+        XCTAssertFalse(empty.isHTML)
+    }
+
+    func testMailAttachment() throws {
+        let attachment = MailAttachment(
+            url: URL(string: "file:///tmp/test.pdf")!,
+            mimeType: "application/pdf",
+            filename: "test.pdf"
+        )
+        XCTAssertEqual(attachment.mimeType, "application/pdf")
+        XCTAssertEqual(attachment.filename, "test.pdf")
+    }
+
+    func testMailComposerResult() throws {
+        let results: [MailComposerResult] = [.sent, .saved, .cancelled, .failed, .unknown]
+        XCTAssertEqual(results.count, 5)
+        XCTAssertEqual(MailComposerResult.sent.rawValue, "sent")
+        XCTAssertEqual(MailComposerResult.cancelled.rawValue, "cancelled")
+    }
 }

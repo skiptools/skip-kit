@@ -255,6 +255,142 @@ This is only needed on iOS — Android handles file access differently by copyin
 
 If you only need to display the file (e.g., pass it to a `DocumentPreview`) without reading its contents, re-acquiring access may not be necessary.
 
+## Mail Composer
+
+The `View.withMailComposer()` modifier presents a system email composition interface, allowing users to compose and send emails from within your app.
+
+On iOS, this uses `MFMailComposeViewController` for in-app email composition with full support for recipients, subject, body (plain text or HTML), and file attachments. On Android, this launches an `ACTION_SENDTO` intent (or `ACTION_SEND`/`ACTION_SEND_MULTIPLE` when attachments are present), which opens the user's preferred email app.
+
+### Checking Availability
+
+Before presenting the composer, check if the device can send email:
+
+```swift
+import SkipKit
+
+if MailComposer.canSendMail() {
+    // Show compose button
+} else {
+    // Email not available
+}
+```
+
+### Basic Usage
+
+```swift
+struct EmailView: View {
+    @State var showComposer = false
+
+    var body: some View {
+        Button("Send Feedback") {
+            showComposer = true
+        }
+        .withMailComposer(
+            isPresented: $showComposer,
+            options: MailComposerOptions(
+                recipients: ["support@example.com"],
+                subject: "App Feedback",
+                body: "I'd like to share the following feedback..."
+            ),
+            onComplete: { result in
+                switch result {
+                case .sent: print("Email sent!")
+                case .saved: print("Draft saved")
+                case .cancelled: print("Cancelled")
+                case .failed: print("Failed to send")
+                case .unknown: print("Unknown result")
+                }
+            }
+        )
+    }
+}
+```
+
+### HTML Body
+
+```swift
+MailComposerOptions(
+    recipients: ["user@example.com"],
+    subject: "Welcome!",
+    body: "<h1>Welcome</h1><p>Thank you for signing up.</p>",
+    isHTML: true
+)
+```
+
+### Attachments
+
+```swift
+let pdfURL = Bundle.main.url(forResource: "report", withExtension: "pdf")!
+
+MailComposerOptions(
+    recipients: ["team@example.com"],
+    subject: "Monthly Report",
+    body: "Please find the report attached.",
+    attachments: [
+        MailAttachment(url: pdfURL, mimeType: "application/pdf", filename: "report.pdf")
+    ]
+)
+```
+
+Multiple attachments are supported:
+
+```swift
+attachments: [
+    MailAttachment(url: pdfURL, mimeType: "application/pdf", filename: "report.pdf"),
+    MailAttachment(url: imageURL, mimeType: "image/png", filename: "chart.png")
+]
+```
+
+### CC and BCC
+
+```swift
+MailComposerOptions(
+    recipients: ["primary@example.com"],
+    ccRecipients: ["manager@example.com", "team@example.com"],
+    bccRecipients: ["archive@example.com"],
+    subject: "Project Update"
+)
+```
+
+### API Reference
+
+**MailComposer** (static methods):
+
+| Method | Description |
+|---|---|
+| `canSendMail() -> Bool` | Whether the device can compose email |
+
+**MailComposerOptions**:
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `recipients` | `[String]` | `[]` | Primary recipients |
+| `ccRecipients` | `[String]` | `[]` | CC recipients |
+| `bccRecipients` | `[String]` | `[]` | BCC recipients |
+| `subject` | `String?` | `nil` | Subject line |
+| `body` | `String?` | `nil` | Body text |
+| `isHTML` | `Bool` | `false` | Whether body is HTML |
+| `attachments` | `[MailAttachment]` | `[]` | File attachments |
+
+**MailAttachment**:
+
+| Property | Type | Description |
+|---|---|---|
+| `url` | `URL` | File URL of the attachment |
+| `mimeType` | `String` | MIME type (e.g. `"application/pdf"`) |
+| `filename` | `String` | Display filename |
+
+**MailComposerResult** (enum):
+`sent`, `saved`, `cancelled`, `failed`, `unknown`
+
+### Platform Notes
+
+> [!NOTE]
+> **iOS**: The `MFMailComposeViewController` requires a configured Mail account on the device. On the simulator, `canSendMail()` typically returns `false`. The `onComplete` callback receives a specific result (`.sent`, `.saved`, `.cancelled`, `.failed`).
+
+> [!NOTE]
+> **Android**: The intent-based approach opens the user's default email app. The `onComplete` callback always receives `.unknown` because Android intents do not report back the send status. When there are no attachments, a `mailto:` URI is used with `ACTION_SENDTO` to target only email apps. When attachments are present, `ACTION_SEND` or `ACTION_SEND_MULTIPLE` is used, and the `FLAG_GRANT_READ_URI_PERMISSION` flag is set for file access. You may need to declare the `android.intent.action.SENDTO` intent filter in your `AndroidManifest.xml` for Android 11+ package visibility.
+
 ## Document Preview
 
 The `View.withDocumentPreview(isPresented: Binding<Bool>, documentURL: URL?, filename: String?, type: String?)` extension function can be used to preview a document available to the app (either selected with the provided `Document Picker` or downloaded locally by the App). 
