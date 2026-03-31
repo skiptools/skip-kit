@@ -15,7 +15,7 @@ let package = Package(
         .library(name: "MyProduct", targets: ["MyTarget"]),
     ],
     dependencies: [
-        .package(url: "https://source.skip.dev/skip-kit.git", "0.0.0"..<"2.0.0"),
+        .package(url: "https://source.skip.dev/skip-kit.git", from: "1.0.0"),
     ],
     targets: [
         .target(name: "MyTarget", dependencies: [
