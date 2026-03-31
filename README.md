@@ -43,6 +43,296 @@ cache.putValue(Data(count: 1), for: UUID()) // total cost = 101, so cache will e
 ```
 
 
+## AppInfo
+
+`AppInfo.current` provides read-only access to information about the currently running application, including its version, name, bundle identifier, build configuration, and platform details. It works consistently on both iOS and Android.
+
+### Basic Usage
+
+```swift
+import SkipKit
+
+let info = AppInfo.current
+
+// Version and identity
+print("App Name: \(info.displayName ?? "Unknown")")
+print("App ID: \(info.appIdentifier ?? "Unknown")")
+print("Version: \(info.version ?? "Unknown")")
+print("Build: \(info.buildNumber ?? "Unknown")")
+print("Full: \(info.versionWithBuild)")  // e.g. "1.2.3 (42)"
+
+// Build configuration
+if info.isDebug {
+    print("Running in debug mode")
+}
+
+if info.isTestFlight {
+    print("Installed from TestFlight")
+}
+
+// Platform
+print("OS: \(info.osName) \(info.osVersion)")  // e.g. "iOS 17.4.1" or "Android 34"
+print("Device: \(info.deviceModel)")             // e.g. "iPhone15,2" or "Pixel 7"
+```
+
+### User-Facing Version String
+
+```swift
+Text("Version \(AppInfo.current.versionWithBuild)")
+// Displays: "Version 1.2.3 (42)"
+```
+
+### Debug vs Release
+
+```swift
+if AppInfo.current.isDebug {
+    // Show debug tools, logging, etc.
+} else {
+    // Production behavior
+}
+```
+
+### iOS Info.plist Access
+
+On iOS, you can query raw Info.plist values:
+
+```swift
+let keys = AppInfo.current.infoDictionaryKeys
+if let minOS = AppInfo.current.infoDictionaryValue(forKey: "MinimumOSVersion") as? String {
+    print("Requires iOS \(minOS)")
+}
+```
+
+### URL Schemes
+
+```swift
+let schemes = AppInfo.current.urlSchemes
+// e.g. ["myapp"] from CFBundleURLTypes
+```
+
+### API Reference
+
+| Property | Type | Description |
+|---|---|---|
+| `bundleIdentifier` | `String?` | Bundle ID (iOS) or package name (Android) |
+| `displayName` | `String?` | User-visible app name |
+| `version` | `String?` | Version string (e.g. `"1.2.3"`) |
+| `buildNumber` | `String?` | Build number as string |
+| `buildNumberInt` | `Int?` | Build number as integer |
+| `versionWithBuild` | `String` | Combined `"version (build)"` string |
+| `isDebug` | `Bool` | Debug build (`DEBUG` flag on iOS, `FLAG_DEBUGGABLE` on Android) |
+| `isRelease` | `Bool` | Release build (inverse of `isDebug`) |
+| `isTestFlight` | `Bool` | TestFlight install (iOS only, always `false` on Android) |
+| `osName` | `String` | Platform name (`"iOS"`, `"Android"`, `"macOS"`) |
+| `osVersion` | `String` | OS version (e.g. `"17.4.1"` or `"34"` for API level) |
+| `deviceModel` | `String` | Device model (e.g. `"iPhone15,2"`, `"Pixel 7"`) |
+| `minimumOSVersion` | `String?` | Minimum required OS version |
+| `urlSchemes` | `[String]` | Registered URL schemes (iOS only) |
+| `infoDictionaryKeys` | `[String]` | All Info.plist keys (iOS only) |
+| `infoDictionaryValue(forKey:)` | `Any?` | Raw Info.plist value lookup (iOS only) |
+
+> [!NOTE]
+> **iOS implementation**: Reads from `Bundle.main.infoDictionary`, `ProcessInfo`, and `utsname` for device model. TestFlight detection uses the sandbox receipt URL.
+>
+> **Android implementation**: Reads from `PackageManager.getPackageInfo()`, `ApplicationInfo`, and `android.os.Build`. The `osVersion` returns the SDK API level (e.g. `"34"` for Android 14). The `isDebug` flag checks `ApplicationInfo.FLAG_DEBUGGABLE`.
+
+## DeviceInfo
+
+`DeviceInfo.current` provides information about the physical device, including screen dimensions, device type, battery status, network connectivity, and locale.
+
+### Screen Information
+
+```swift
+import SkipKit
+
+let device = DeviceInfo.current
+
+print("Screen: \(device.screenWidth) x \(device.screenHeight) points")
+print("Scale: \(device.screenScale)x")
+```
+
+### Device Type
+
+Determine whether the app is running on a phone, tablet, desktop, TV, or watch:
+
+```swift
+switch DeviceInfo.current.deviceType {
+case .phone:  print("Phone")
+case .tablet: print("Tablet")
+case .desktop: print("Desktop")
+case .tv:     print("TV")
+case .watch:  print("Watch")
+case .unknown: print("Unknown")
+}
+
+// Convenience checks
+if DeviceInfo.current.isTablet {
+    // Use tablet layout
+}
+```
+
+On iOS, this uses `UIDevice.current.userInterfaceIdiom`. On Android, it uses the screen layout configuration (large/xlarge = tablet).
+
+### Device Model
+
+```swift
+print("Manufacturer: \(DeviceInfo.current.manufacturer)")  // "Apple" or "Google", "Samsung", etc.
+print("Model: \(DeviceInfo.current.modelName)")              // "iPhone15,2" or "Pixel 7"
+```
+
+### Battery
+
+```swift
+if let level = DeviceInfo.current.batteryLevel {
+    print("Battery: \(Int(level * 100))%")
+}
+
+switch DeviceInfo.current.batteryState {
+case .charging: print("Charging")
+case .full:     print("Full")
+case .unplugged: print("On battery")
+case .unknown:  print("Unknown")
+}
+```
+
+On iOS, uses `UIDevice.current.batteryLevel` and `.batteryState`. On Android, uses `BatteryManager`.
+
+### Network Connectivity
+
+#### One-Shot Check
+
+For a single point-in-time check, use the synchronous properties:
+
+```swift
+let status = DeviceInfo.current.networkStatus
+switch status {
+case .wifi:     print("Connected via Wi-Fi")
+case .cellular: print("Connected via cellular")
+case .ethernet: print("Connected via Ethernet")
+case .other:    print("Connected (other)")
+case .offline:  print("No connection")
+}
+
+// Convenience checks
+if DeviceInfo.current.isOnline {
+    // Proceed with network request
+}
+if DeviceInfo.current.isOnWifi {
+    // Safe for large downloads
+}
+```
+
+#### Live Monitoring with AsyncStream
+
+For live updates whenever connectivity changes, use `monitorNetwork()` which returns an `AsyncStream<NetworkStatus>`. The stream emits an initial value immediately and then a new value each time the network status changes:
+
+```swift
+struct ConnectivityView: View {
+    @State var status: NetworkStatus = .offline
+
+    var body: some View {
+        VStack {
+            Text("Network: \(status.rawValue)")
+            Circle()
+                .fill(status == .offline ? Color.red : Color.green)
+                .frame(width: 20, height: 20)
+        }
+        .task {
+            for await newStatus in DeviceInfo.current.monitorNetwork() {
+                status = newStatus
+            }
+        }
+    }
+}
+```
+
+You can also use it in non-UI code:
+
+```swift
+func waitForConnectivity() async -> NetworkStatus {
+    for await status in DeviceInfo.current.monitorNetwork() {
+        if status != .offline {
+            return status
+        }
+    }
+    return .offline
+}
+```
+
+Cancel the monitoring by cancelling the enclosing `Task`:
+
+```swift
+let monitorTask = Task {
+    for await status in DeviceInfo.current.monitorNetwork() {
+        print("Status changed: \(status.rawValue)")
+    }
+}
+
+// Later, stop monitoring:
+monitorTask.cancel()
+```
+
+On iOS, `monitorNetwork()` uses `NWPathMonitor` for live path updates. On Android, it uses `ConnectivityManager.registerDefaultNetworkCallback` which receives `onAvailable`, `onLost`, and `onCapabilitiesChanged` callbacks. The callback is automatically unregistered when the stream is cancelled.
+
+> [!NOTE]
+> **Android**: To query or monitor network status, your app needs the `android.permission.ACCESS_NETWORK_STATE` permission in `AndroidManifest.xml`:
+> ```xml
+> <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+> ```
+
+### Locale
+
+```swift
+print("Locale: \(DeviceInfo.current.localeIdentifier)")      // e.g. "en_US"
+print("Language: \(DeviceInfo.current.languageCode ?? "")")   // e.g. "en"
+print("Time zone: \(DeviceInfo.current.timeZoneIdentifier)")  // e.g. "America/New_York"
+```
+
+### API Reference
+
+**Screen:**
+
+| Property | Type | Description |
+|---|---|---|
+| `screenWidth` | `Double` | Screen width in points |
+| `screenHeight` | `Double` | Screen height in points |
+| `screenScale` | `Double` | Pixels per point |
+
+**Device:**
+
+| Property | Type | Description |
+|---|---|---|
+| `deviceType` | `DeviceType` | `.phone`, `.tablet`, `.desktop`, `.tv`, `.watch`, `.unknown` |
+| `isTablet` | `Bool` | Whether the device is a tablet |
+| `isPhone` | `Bool` | Whether the device is a phone |
+| `manufacturer` | `String` | Device manufacturer (`"Apple"` on iOS) |
+| `modelName` | `String` | Model identifier (e.g. `"iPhone15,2"`, `"Pixel 7"`) |
+
+**Battery:**
+
+| Property | Type | Description |
+|---|---|---|
+| `batteryLevel` | `Double?` | Battery level 0.0–1.0, or `nil` if unavailable |
+| `batteryState` | `BatteryState` | `.unplugged`, `.charging`, `.full`, `.unknown` |
+
+**Network:**
+
+| Property | Type | Description |
+|---|---|---|
+| `networkStatus` | `NetworkStatus` | One-shot connectivity check |
+| `isOnline` | `Bool` | Has any network connectivity (one-shot) |
+| `isOnWifi` | `Bool` | Connected via Wi-Fi (one-shot) |
+| `isOnCellular` | `Bool` | Connected via cellular (one-shot) |
+| `monitorNetwork()` | `AsyncStream<NetworkStatus>` | Live connectivity updates |
+
+**Locale:**
+
+| Property | Type | Description |
+|---|---|---|
+| `localeIdentifier` | `String` | Current locale (e.g. `"en_US"`) |
+| `languageCode` | `String?` | Language code (e.g. `"en"`) |
+| `timeZoneIdentifier` | `String` | Time zone (e.g. `"America/New_York"`) |
+
 ## PermissionManager
 
 The `PermissionManager` provides the ability to request device permissions.
