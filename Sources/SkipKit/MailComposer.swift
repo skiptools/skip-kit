@@ -101,9 +101,14 @@ public enum MailComposer {
     public static func canSendMail() -> Bool {
         #if SKIP
         let context = ProcessInfo.processInfo.androidContext
-        let intent = Intent(Intent.ACTION_SENDTO)
-        intent.setData(Uri.parse("mailto:"))
-        return intent.resolveActivity(context.getPackageManager()) != nil
+        // check for either ACTION_SENDTO or ACTION_SEND
+        // https://github.com/skiptools/skip-kit/issues/25
+        let sendToIntent = Intent(Intent.ACTION_SENDTO)
+        sendToIntent.setData(Uri.parse("mailto:"))
+        let sendIntent = Intent(Intent.ACTION_SEND)
+        sendIntent.setData(Uri.parse("mailto:"))
+        return sendToIntent.resolveActivity(context.getPackageManager()) != nil
+            || sendIntent.resolveActivity(context.getPackageManager()) != nil
         #elseif os(iOS)
         return MFMailComposeViewController.canSendMail()
         #else
