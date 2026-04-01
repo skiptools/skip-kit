@@ -926,7 +926,7 @@ On Android, patterns are converted to a `VibrationEffect.Composition` with the c
 
 ## Building
 
-This project is a free Swift Package Manager module that uses the
+This project is a Swift Package Manager module that uses the
 [Skip](https://skip.dev) plugin to transpile Swift into Kotlin.
 
 Building the module requires that Skip be installed using 
