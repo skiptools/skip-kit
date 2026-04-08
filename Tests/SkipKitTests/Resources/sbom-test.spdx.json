@@ -1,0 +1,128 @@
+{
+  "SPDXID" : "SPDXRef-DOCUMENT",
+  "spdxVersion" : "SPDX-2.3",
+  "creationInfo" : {
+    "created" : "2026-04-08T12:00:00Z",
+    "creators" : [ "Tool: skip-kit-test" ],
+    "licenseListVersion" : "3.22"
+  },
+  "name" : "skip-kit-sbom-test",
+  "dataLicense" : "CC0-1.0",
+  "documentNamespace" : "https://skip.dev/spdx/skip-kit-test",
+  "hasExtractedLicensingInfos" : [ {
+    "licenseId" : "LicenseRef-custom",
+    "extractedText" : "A custom license that is not on the SPDX list.",
+    "name" : "Custom Test License",
+    "seeAlsos" : [ "https://example.com/custom-license" ]
+  } ],
+  "packages" : [
+    {
+      "SPDXID" : "SPDXRef-Package-test-app",
+      "downloadLocation" : "NOASSERTION",
+      "filesAnalyzed" : false,
+      "name" : "test-app",
+      "primaryPackagePurpose" : "APPLICATION",
+      "supplier" : "NOASSERTION",
+      "versionInfo" : "1.0.0"
+    },
+    {
+      "SPDXID" : "SPDXRef-Package-skip-kit",
+      "copyrightText" : "Copyright 2025 Skip",
+      "downloadLocation" : "https://source.skip.tools/skip-kit.git",
+      "externalRefs" : [
+        {
+          "referenceCategory" : "PACKAGE-MANAGER",
+          "referenceLocator" : "https://source.skip.tools/skip-kit.git",
+          "referenceType" : "swiftpm"
+        }
+      ],
+      "filesAnalyzed" : false,
+      "licenseConcluded" : "MPL-2.0",
+      "licenseDeclared" : "MPL-2.0",
+      "name" : "skip-kit",
+      "primaryPackagePurpose" : "LIBRARY",
+      "supplier" : "Organization: Skip",
+      "versionInfo" : "1.0.0"
+    },
+    {
+      "SPDXID" : "SPDXRef-Package-example-eupl",
+      "checksums" : [
+        {
+          "algorithm" : "SHA1",
+          "checksumValue" : "0123456789abcdef0123456789abcdef01234567"
+        },
+        {
+          "algorithm" : "SHA256",
+          "checksumValue" : "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+        }
+      ],
+      "copyrightText" : "NOASSERTION",
+      "downloadLocation" : "https://example.com/example-eupl.tar.gz",
+      "externalRefs" : [
+        {
+          "referenceCategory" : "PACKAGE-MANAGER",
+          "referenceLocator" : "pkg:generic/example-eupl@1.2.3",
+          "referenceType" : "purl"
+        }
+      ],
+      "filesAnalyzed" : false,
+      "licenseConcluded" : "EUPL-1.2",
+      "licenseDeclared" : "EUPL-1.2",
+      "name" : "example-eupl",
+      "primaryPackagePurpose" : "LIBRARY",
+      "supplier" : "Person: Example Author",
+      "versionInfo" : "1.2.3"
+    },
+    {
+      "SPDXID" : "SPDXRef-Package-example-eupl-helper",
+      "copyrightText" : "NOASSERTION",
+      "downloadLocation" : "https://example.com/example-eupl-helper.tar.gz",
+      "filesAnalyzed" : false,
+      "licenseConcluded" : "EUPL-1.2",
+      "licenseDeclared" : "EUPL-1.2",
+      "name" : "example-eupl-helper",
+      "primaryPackagePurpose" : "LIBRARY",
+      "supplier" : "Person: Example Author",
+      "versionInfo" : "0.9.0"
+    },
+    {
+      "SPDXID" : "SPDXRef-Package-example-custom",
+      "copyrightText" : "NOASSERTION",
+      "downloadLocation" : "https://example.com/example-custom.tar.gz",
+      "filesAnalyzed" : false,
+      "licenseConcluded" : "NOASSERTION",
+      "licenseDeclared" : "LicenseRef-custom",
+      "name" : "example-custom",
+      "primaryPackagePurpose" : "LIBRARY",
+      "supplier" : "Organization: Example Inc",
+      "versionInfo" : "0.1.0"
+    }
+  ],
+  "relationships" : [
+    {
+      "relatedSpdxElement" : "SPDXRef-Package-test-app",
+      "relationshipType" : "DESCRIBES",
+      "spdxElementId" : "SPDXRef-DOCUMENT"
+    },
+    {
+      "relatedSpdxElement" : "SPDXRef-Package-skip-kit",
+      "relationshipType" : "DEPENDS_ON",
+      "spdxElementId" : "SPDXRef-Package-test-app"
+    },
+    {
+      "relatedSpdxElement" : "SPDXRef-Package-example-eupl",
+      "relationshipType" : "DEPENDS_ON",
+      "spdxElementId" : "SPDXRef-Package-test-app"
+    },
+    {
+      "relatedSpdxElement" : "SPDXRef-Package-example-custom",
+      "relationshipType" : "DEPENDS_ON",
+      "spdxElementId" : "SPDXRef-Package-test-app"
+    },
+    {
+      "relatedSpdxElement" : "SPDXRef-Package-example-eupl-helper",
+      "relationshipType" : "DEPENDS_ON",
+      "spdxElementId" : "SPDXRef-Package-example-eupl"
+    }
+  ]
+}
