@@ -92,10 +92,16 @@
     "Description" : {
 
     },
+    "Display Mode" : {
+
+    },
     "Download" : {
 
     },
     "External References" : {
+
+    },
+    "Flattened" : {
 
     },
     "Generator" : {
@@ -129,6 +135,9 @@
           }
         }
       }
+    },
+    "Hierarchical" : {
+
     },
     "Home" : {
       "extractionState" : "stale",

@@ -96,7 +96,13 @@ struct SBOMEmptyView: View {
 struct SBOMListView: View {
     let document: SBOMDocument
     let bundle: Bundle
-    let displayMode: SBOMDisplayMode
+    @State private var displayMode: SBOMDisplayMode
+
+    init(document: SBOMDocument, bundle: Bundle, displayMode: SBOMDisplayMode) {
+        self.document = document
+        self.bundle = bundle
+        self._displayMode = State(initialValue: displayMode)
+    }
 
     /// The packages shown at the top of the list, depending on the current display mode.
     private var listedPackages: [SBOMPackage] {
@@ -110,6 +116,17 @@ struct SBOMListView: View {
 
     var body: some View {
         List {
+            // we do not show the picker on iOS because the was SBOMs are generated are always flattened (because it is derived from the Package.resolved, which does not contain any information about which packages depend on which other packages)
+            #if os(Android)
+            Section {
+                Picker("Display Mode", selection: $displayMode) {
+                    Text("Flattened").tag(SBOMDisplayMode.flat)
+                    Text("Hierarchical").tag(SBOMDisplayMode.hierarchy)
+                }
+                .pickerStyle(.segmented)
+            }
+            #endif
+
             Section {
                 ForEach(listedPackages) { pkg in
                     NavigationLink(destination: SBOMPackageDetailView(package: pkg, document: document)) {
