@@ -71,6 +71,11 @@ public struct SBOMView: View {
             self.loadError = "Failed to parse software bill of materials: \(error.localizedDescription)"
         }
     }
+
+    /// Returns `true` if the given bundle contains an SBOM resource for the current platform.
+    public static func bundleContainsSBOM(_ bundle: Bundle) -> Bool {
+        return SBOMDocument.resourceURL(in: bundle) != nil
+    }
 }
 
 struct SBOMEmptyView: View {
