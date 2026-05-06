@@ -8,7 +8,7 @@ import Foundation
 /// A parsed SPDX (Software Package Data Exchange) Software Bill of Materials document.
 ///
 /// This is a Codable representation of the SPDX 2.3 JSON format produced by tools like
-/// `skip sbom create` (for the iOS/SwiftPM dependency tree) and the `spdx-gradle-plugin`
+/// `skip meta sbom create` (for the iOS/SwiftPM dependency tree) and the `spdx-gradle-plugin`
 /// (for the Android/Gradle dependency tree).
 ///
 /// See: https://spdx.github.io/spdx-spec/v2.3/
