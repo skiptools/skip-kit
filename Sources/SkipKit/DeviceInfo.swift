@@ -289,16 +289,17 @@ public final class DeviceInfo {
         #elseif canImport(Network)
         let monitor = NWPathMonitor()
         let queue = DispatchQueue(label: "skip.kit.network.snapshot")
-        var result: NetworkStatus = .offline
+        final class Box: @unchecked Sendable { var value: NetworkStatus = .offline }
+        let result = Box()
         let semaphore = DispatchSemaphore(value: 0)
         monitor.pathUpdateHandler = { path in
-            result = Self.mapNWPath(path)
+            result.value = Self.mapNWPath(path)
             semaphore.signal()
         }
         monitor.start(queue: queue)
         _ = semaphore.wait(timeout: .now() + 1.0)
         monitor.cancel()
-        return result
+        return result.value
         #else
         return .offline
         #endif
