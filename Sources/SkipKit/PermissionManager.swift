@@ -5,8 +5,6 @@ import Foundation
 import SwiftUI
 #if !SKIP
 import Photos
-// import Contacts // TODO: create framework skip-contacts
-// import EventKit // TODO: create framework skip-calendar
 import AVFoundation
 import CoreLocation
 import UserNotifications
@@ -453,7 +451,7 @@ public class PermissionManager {
 /// A delegate that encapsulates a `CLLocationManager` and handles `locationManagerDidChangeAuthorization`
 class LocationDelegate: NSObject, CLLocationManagerDelegate {
     /// For some reason, we need to keep just a single reference to CLLocationManager around for the locationManagerDidChangeAuthorization to get called reliably
-    static let shared = LocationDelegate()
+    nonisolated(unsafe) static let shared = LocationDelegate()
 
     lazy var locationManager = CLLocationManager()
     var continuation: CheckedContinuation<Void, Never>?
@@ -510,7 +508,7 @@ public enum PermissionAuthorization : String {
 }
 
 /// The encapsulation of a permission name
-public struct PermissionType : Equatable {
+public struct PermissionType : Equatable, Sendable {
     public let androidPermissionName: String
 
     public init(androidPermissionName: String) {

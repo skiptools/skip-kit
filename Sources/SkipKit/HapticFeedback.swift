@@ -7,7 +7,7 @@ import CoreHaptics
 #endif
 
 /// A single haptic event within a pattern.
-public struct HapticEvent {
+public struct HapticEvent: Sendable {
     /// The type of haptic primitive to play.
     public let type: HapticEventType
     /// Intensity from 0.0 to 1.0.
@@ -23,7 +23,7 @@ public struct HapticEvent {
 }
 
 /// The type of haptic primitive.
-public enum HapticEventType {
+public enum HapticEventType: Sendable {
     /// A short, sharp tap. The most common haptic element.
     case tap
     /// A subtle, light tick. Good for selections and fine adjustments.
@@ -39,7 +39,7 @@ public enum HapticEventType {
 }
 
 /// A sequence of haptic events that form a complete feedback pattern.
-public struct HapticPattern {
+public struct HapticPattern: Sendable {
     public let events: [HapticEvent]
 
     public init(_ events: [HapticEvent]) {
@@ -135,7 +135,7 @@ extension HapticPattern {
 /// Plays custom haptic patterns on both iOS and Android.
 public final class HapticFeedback {
     #if canImport(CoreHaptics)
-    private static var engine: CHHapticEngine?
+    nonisolated(unsafe) private static var engine: CHHapticEngine?
     #endif
 
     /// Play a haptic pattern. Call from any thread.

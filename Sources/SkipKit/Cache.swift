@@ -10,7 +10,7 @@ public class Cache<Key: Hashable, Value> {
     private let cacheLock = NSLock()
     private let manager: CacheManager<Key, Value>
 
-    public init(evictOnBackground: Bool = true, limit: Int? = nil, cost: ((Value) -> Int)? = nil) {
+    public init(evictOnBackground: Bool = true, limit: Int? = nil, cost: (@Sendable (Value) -> Int)? = nil) {
         self.manager = CacheManager(evictOnBackground: evictOnBackground, limit: limit, cost: cost)
     }
 
@@ -154,10 +154,10 @@ private final class LRUCostCache<Key, Value>: android.util.LruCache<Key, Value> 
 }
 
 #else
-private final class CacheManager<Key: Hashable, Value>: NSObject, NSCacheDelegate {
+private final class CacheManager<Key: Hashable, Value>: NSObject, NSCacheDelegate, @unchecked Sendable {
     let cache = NSCache<CacheKey, CacheValue>()
     let limit: Int?
-    let cost: ((Value) -> Int)?
+    let cost: (@Sendable (Value) -> Int)?
     private var didEnterBackgroundObserver: NSObjectProtocol?
     #if canImport(UIKit)
     /// https://developer.apple.com/documentation/uikit/uiapplication/didenterbackgroundnotification
@@ -167,7 +167,7 @@ private final class CacheManager<Key: Hashable, Value>: NSObject, NSCacheDelegat
     private let backgroundNotificationName = Notification.Name("NSApplicationDidResignActiveNotification")
     #endif
 
-    public init(evictOnBackground: Bool, limit: Int?, cost: ((Value) -> Int)?) {
+    public init(evictOnBackground: Bool, limit: Int?, cost: (@Sendable (Value) -> Int)?) {
         self.limit = limit
         self.cost = cost
 

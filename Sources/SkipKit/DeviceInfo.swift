@@ -90,7 +90,7 @@ public final class DeviceInfo {
         let dm = context.getResources().getDisplayMetrics()
         return Double(dm.widthPixels) / Double(dm.density)
         #elseif canImport(UIKit)
-        return Double(UIScreen.main.bounds.width)
+        return MainActor.assumeIsolated { Double(UIScreen.main.bounds.width) }
         #elseif os(macOS)
         return Double(NSScreen.main?.frame.width ?? 0)
         #else
@@ -105,7 +105,7 @@ public final class DeviceInfo {
         let dm = context.getResources().getDisplayMetrics()
         return Double(dm.heightPixels) / Double(dm.density)
         #elseif canImport(UIKit)
-        return Double(UIScreen.main.bounds.height)
+        return MainActor.assumeIsolated { Double(UIScreen.main.bounds.height) }
         #elseif os(macOS)
         return Double(NSScreen.main?.frame.height ?? 0)
         #else
@@ -119,7 +119,7 @@ public final class DeviceInfo {
         let context = ProcessInfo.processInfo.androidContext
         return Double(context.getResources().getDisplayMetrics().density)
         #elseif canImport(UIKit)
-        return Double(UIScreen.main.scale)
+        return MainActor.assumeIsolated { Double(UIScreen.main.scale) }
         #elseif os(macOS)
         return Double(NSScreen.main?.backingScaleFactor ?? 1.0)
         #else
@@ -146,12 +146,14 @@ public final class DeviceInfo {
             return .phone
         }
         #elseif canImport(UIKit)
-        switch UIDevice.current.userInterfaceIdiom {
-        case .phone: return .phone
-        case .pad: return .tablet
-        case .tv: return .tv
-        case .mac: return .desktop
-        default: return .unknown
+        return MainActor.assumeIsolated {
+            switch UIDevice.current.userInterfaceIdiom {
+            case .phone: return .phone
+            case .pad: return .tablet
+            case .tv: return .tv
+            case .mac: return .desktop
+            default: return .unknown
+            }
         }
         #elseif os(macOS)
         return .desktop
@@ -231,13 +233,15 @@ public final class DeviceInfo {
         if level < 0 { return nil }
         return Double(level) / 100.0
         #elseif canImport(UIKit)
-        let device = UIDevice.current
-        let wasEnabled = device.isBatteryMonitoringEnabled
-        device.isBatteryMonitoringEnabled = true
-        let level = device.batteryLevel
-        if !wasEnabled { device.isBatteryMonitoringEnabled = false }
-        if level < 0 { return nil }
-        return Double(level)
+        return MainActor.assumeIsolated {
+            let device = UIDevice.current
+            let wasEnabled = device.isBatteryMonitoringEnabled
+            device.isBatteryMonitoringEnabled = true
+            let level = device.batteryLevel
+            if !wasEnabled { device.isBatteryMonitoringEnabled = false }
+            if level < 0 { return nil }
+            return Double(level)
+        }
         #else
         return nil
         #endif
@@ -258,17 +262,19 @@ public final class DeviceInfo {
         }
         return .unplugged
         #elseif canImport(UIKit)
-        let device = UIDevice.current
-        let wasEnabled = device.isBatteryMonitoringEnabled
-        device.isBatteryMonitoringEnabled = true
-        let state = device.batteryState
-        if !wasEnabled { device.isBatteryMonitoringEnabled = false }
-        switch state {
-        case .unplugged: return .unplugged
-        case .charging: return .charging
-        case .full: return .full
-        case .unknown: return .unknown
-        @unknown default: return .unknown
+        return MainActor.assumeIsolated {
+            let device = UIDevice.current
+            let wasEnabled = device.isBatteryMonitoringEnabled
+            device.isBatteryMonitoringEnabled = true
+            let state = device.batteryState
+            if !wasEnabled { device.isBatteryMonitoringEnabled = false }
+            switch state {
+            case .unplugged: return .unplugged
+            case .charging: return .charging
+            case .full: return .full
+            case .unknown: return .unknown
+            @unknown default: return .unknown
+            }
         }
         #else
         return .unknown
@@ -289,16 +295,17 @@ public final class DeviceInfo {
         #elseif canImport(Network)
         let monitor = NWPathMonitor()
         let queue = DispatchQueue(label: "skip.kit.network.snapshot")
-        var result: NetworkStatus = .offline
+        final class Box: @unchecked Sendable { var value: NetworkStatus = .offline }
+        let result = Box()
         let semaphore = DispatchSemaphore(value: 0)
         monitor.pathUpdateHandler = { path in
-            result = Self.mapNWPath(path)
+            result.value = Self.mapNWPath(path)
             semaphore.signal()
         }
         monitor.start(queue: queue)
         _ = semaphore.wait(timeout: .now() + 1.0)
         monitor.cancel()
-        return result
+        return result.value
         #else
         return .offline
         #endif
