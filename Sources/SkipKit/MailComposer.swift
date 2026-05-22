@@ -105,7 +105,7 @@ public enum MailComposer {
         intent.setData(Uri.parse("mailto:"))
         return intent.resolveActivity(context.getPackageManager()) != nil
         #elseif os(iOS)
-        return MFMailComposeViewController.canSendMail()
+        return MainActor.assumeIsolated { MFMailComposeViewController.canSendMail() }
         #else
         return false
         #endif
