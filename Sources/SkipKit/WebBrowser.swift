@@ -205,7 +205,7 @@ private struct SafariViewWrapper: UIViewControllerRepresentable {
 }
 
 @MainActor
-private class SafariCoordinator: NSObject, @MainActor SFSafariViewControllerDelegate {
+private class SafariCoordinator: NSObject, @preconcurrency SFSafariViewControllerDelegate {
     let parent: SafariViewWrapper
 
     init(parent: SafariViewWrapper) {
