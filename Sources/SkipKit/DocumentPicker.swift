@@ -86,7 +86,9 @@ extension View {
                         inputStream.copyTo(outputStream)
                         outputStream.close()
                         inputStream.close()
-                        selectedDocumentURL.wrappedValue = URL(fileURLWithPath: destinationFile.absolutePath)
+                        // Use File.toURI() so spaces / parens / etc. get percent-encoded
+                        // before reaching Skip's java.net.URI-backed URL initializer.
+                        selectedDocumentURL.wrappedValue = URL(platformValue: destinationFile.toURI())
                     } else {
                         selectedDocumentURL.wrappedValue = URL(platformValue: java.net.URI.create(uri.toString()))
                     }
