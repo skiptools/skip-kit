@@ -47,8 +47,7 @@ extension View {
 
                 if let query = resolver.query(uri, nil, nil, nil, nil) {
                     if query.moveToFirst() {
-                        // Some providers (notably Downloads) omit DISPLAY_NAME / mime
-                        // columns. Use getColumnIndex (not …OrThrow) and tolerate -1.
+                        // Downloads provider omits these columns; tolerate -1.
                         let nameIndex = query.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
                         if nameIndex >= 0 {
                             resolvedName = query.getString(nameIndex)
@@ -61,21 +60,16 @@ extension View {
                     query.close()
                 }
 
-                // Fall back to ContentResolver.getType for mime if the cursor didn't have one.
                 if resolvedMime == nil {
                     resolvedMime = resolver.getType(uri)
                 }
 
-                // Always have a usable filename — some providers return a null DISPLAY_NAME.
                 let safeName: String = resolvedName ?? "import-\(java.util.UUID.randomUUID().toString())"
 
                 selectedFilename.wrappedValue = safeName
                 selectedFileMimeType.wrappedValue = resolvedMime
 
-                // Copy the picked file into the cache dir so it stays accessible after this
-                // callback returns. Build the destination with java.io.File rather than
-                // URL.appendingPathComponent — Skip's URL._appendingPathComponent NPEs on
-                // some inputs (encoded whitespace, etc).
+                // java.io.File path avoids Skip URL.appendingPathComponent NPE.
                 if let cacheDir = context.cacheDir {
                     let destinationFile = java.io.File(cacheDir, safeName)
                     if destinationFile.exists() {
@@ -86,8 +80,7 @@ extension View {
                         inputStream.copyTo(outputStream)
                         outputStream.close()
                         inputStream.close()
-                        // Use File.toURI() so spaces / parens / etc. get percent-encoded
-                        // before reaching Skip's java.net.URI-backed URL initializer.
+                        // File.toURI() percent-encodes; raw path would crash java.net.URI.
                         selectedDocumentURL.wrappedValue = URL(platformValue: destinationFile.toURI())
                     } else {
                         selectedDocumentURL.wrappedValue = URL(platformValue: java.net.URI.create(uri.toString()))
