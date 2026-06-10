@@ -42,38 +42,56 @@ extension View {
             logger.log(message: "selected document uri: \(uri)")
             if let uri = uri {
                 let resolver = context.contentResolver
-                                            
+                var resolvedName: String? = nil
+                var resolvedMime: String? = nil
+
                 if let query = resolver.query(uri, nil, nil, nil, nil) {
-                    let nameIndex = query.getColumnIndexOrThrow(android.provider.OpenableColumns.DISPLAY_NAME)
-                    let mimetypeIndex = query.getColumnIndexOrThrow(android.provider.DocumentsContract.Document.COLUMN_MIME_TYPE)
-                    query.moveToFirst()
-                    let name = query.getString(nameIndex)
-                    let type = query.getString(mimetypeIndex)
-                    
-                    selectedFilename.wrappedValue = name
-                    selectedFileMimeType.wrappedValue = type
-                    
-                    // To be able to access the file from another part of the app it needs to be copied in tha cached directory:
-                    if let storageDir = context.cacheDir, let url = URL(string: storageDir.path) {
-                        let filemanager = FileManager.default
-                        let destinationFileURL = url.appendingPathComponent(selectedFilename.wrappedValue!)
-                        
-                        if filemanager.fileExists(atPath: destinationFileURL.path) {
-                            try? filemanager.removeItem(at: destinationFileURL)
+                    if query.moveToFirst() {
+                        // Some providers (notably Downloads) omit DISPLAY_NAME / mime
+                        // columns. Use getColumnIndex (not …OrThrow) and tolerate -1.
+                        let nameIndex = query.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if nameIndex >= 0 {
+                            resolvedName = query.getString(nameIndex)
                         }
-                                                
-                        let inputStream = resolver.openInputStream(uri)!
-                        let outputFile = java.io.File(destinationFileURL.path)
-                        let outputStream = java.io.FileOutputStream(outputFile)
+                        let mimeIndex = query.getColumnIndex(android.provider.DocumentsContract.Document.COLUMN_MIME_TYPE)
+                        if mimeIndex >= 0 {
+                            resolvedMime = query.getString(mimeIndex)
+                        }
+                    }
+                    query.close()
+                }
+
+                // Fall back to ContentResolver.getType for mime if the cursor didn't have one.
+                if resolvedMime == nil {
+                    resolvedMime = resolver.getType(uri)
+                }
+
+                // Always have a usable filename — some providers return a null DISPLAY_NAME.
+                let safeName: String = resolvedName ?? "import-\(java.util.UUID.randomUUID().toString())"
+
+                selectedFilename.wrappedValue = safeName
+                selectedFileMimeType.wrappedValue = resolvedMime
+
+                // Copy the picked file into the cache dir so it stays accessible after this
+                // callback returns. Build the destination with java.io.File rather than
+                // URL.appendingPathComponent — Skip's URL._appendingPathComponent NPEs on
+                // some inputs (encoded whitespace, etc).
+                if let cacheDir = context.cacheDir {
+                    let destinationFile = java.io.File(cacheDir, safeName)
+                    if destinationFile.exists() {
+                        destinationFile.delete()
+                    }
+                    if let inputStream = resolver.openInputStream(uri) {
+                        let outputStream = java.io.FileOutputStream(destinationFile)
                         inputStream.copyTo(outputStream)
-                        
                         outputStream.close()
                         inputStream.close()
-                        
-                        selectedDocumentURL.wrappedValue = destinationFileURL
+                        selectedDocumentURL.wrappedValue = URL(fileURLWithPath: destinationFile.absolutePath)
                     } else {
                         selectedDocumentURL.wrappedValue = URL(platformValue: java.net.URI.create(uri.toString()))
                     }
+                } else {
+                    selectedDocumentURL.wrappedValue = URL(platformValue: java.net.URI.create(uri.toString()))
                 }
             }
         }
