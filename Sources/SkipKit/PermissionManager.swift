@@ -6,7 +6,7 @@ import SwiftUI
 #if !SKIP
 import Photos
 import AVFoundation
-import CoreLocation
+// NOTE: CoreLocation is intentionally NOT imported; see the comment on LocationDelegate below
 import UserNotifications
 import SystemConfiguration
 #else
@@ -314,35 +314,37 @@ public final class PermissionManager: Sendable {
         return .unknown
         
         #else
-        let locationManager = LocationDelegate.shared.locationManager
-        let status = locationManager.authorizationStatus
-        let accuracy = locationManager.accuracyAuthorization
+        guard let locationManager = LocationDelegate.shared.locationManager,
+              let status = locationManager.value(forKey: "authorizationStatus") as? Int else {
+            return .unknown
+        }
+        let accuracy = locationManager.value(forKey: "accuracyAuthorization") as? Int
 
         switch status {
-        case .notDetermined:
+        case LocationDelegate.authorizationStatusNotDetermined:
             return .unknown
-        case .restricted:
+        case LocationDelegate.authorizationStatusRestricted:
             return .restricted
-        case .denied:
+        case LocationDelegate.authorizationStatusDenied:
             return .denied
-        case .authorizedAlways:
-            if precise == true && accuracy == .reducedAccuracy {
+        case LocationDelegate.authorizationStatusAuthorizedAlways:
+            if precise == true && accuracy == LocationDelegate.accuracyAuthorizationReducedAccuracy {
                 // requested fullAccuracy, but only coarse was approved
                 return .limited
             } else {
                 return .authorized
             }
-        case .authorizedWhenInUse:
+        case LocationDelegate.authorizationStatusAuthorizedWhenInUse:
             if always == true {
                 // requested always, but only when in use was granted
                 return .limited
-            } else if precise == true && accuracy == .reducedAccuracy {
+            } else if precise == true && accuracy == LocationDelegate.accuracyAuthorizationReducedAccuracy {
                 // requested fullAccuracy, but only coarse was approved
                 return .limited
             } else {
                 return .authorized
             }
-        @unknown default:
+        default:
             return .unknown
         }
         #endif
@@ -372,33 +374,69 @@ public final class PermissionManager: Sendable {
 }
 
 #if !SKIP
-/// A delegate that encapsulates a `CLLocationManager` and handles `locationManagerDidChangeAuthorization`
-class LocationDelegate: NSObject, CLLocationManagerDelegate {
+/// A delegate that encapsulates a `CLLocationManager` and handles `locationManagerDidChangeAuthorization`.
+///
+/// CoreLocation is accessed dynamically through the Objective-C runtime rather than being imported,
+/// because merely linking against CoreLocation.framework causes App Store Connect to require a
+/// location usage purpose string from every app that embeds this library, even apps that never use location.
+class LocationDelegate: NSObject {
     /// For some reason, we need to keep just a single reference to CLLocationManager around for the locationManagerDidChangeAuthorization to get called reliably
     nonisolated(unsafe) static let shared = LocationDelegate()
 
-    lazy var locationManager = CLLocationManager()
+    /// `CLAuthorizationStatus` constants
+    static let authorizationStatusNotDetermined = 0
+    static let authorizationStatusRestricted = 1
+    static let authorizationStatusDenied = 2
+    static let authorizationStatusAuthorizedAlways = 3
+    static let authorizationStatusAuthorizedWhenInUse = 4
+
+    /// `CLAccuracyAuthorization` constants
+    static let accuracyAuthorizationFullAccuracy = 0
+    static let accuracyAuthorizationReducedAccuracy = 1
+
+    /// The shared `CLLocationManager` instance, or nil if the CoreLocation framework could not be loaded
+    lazy var locationManager: NSObject? = LocationDelegate.locationManagerClass()?.init()
+
     var continuation: CheckedContinuation<Void, Never>?
 
     override init() {
         super.init()
     }
 
+    /// Returns the `CLLocationManager` class, loading the CoreLocation system framework if no other module in the app has already linked it
+    private static func locationManagerClass() -> NSObject.Type? {
+        if let managerClass = NSClassFromString("CLLocationManager") as? NSObject.Type {
+            return managerClass
+        }
+        // the unversioned path is the iOS framework layout; the versioned path is the macOS layout
+        for frameworkPath in [
+            "/System/Library/Frameworks/CoreLocation.framework/CoreLocation",
+            "/System/Library/Frameworks/CoreLocation.framework/Versions/A/CoreLocation",
+        ] {
+            if dlopen(frameworkPath, RTLD_LAZY) != nil {
+                break
+            }
+        }
+        return NSClassFromString("CLLocationManager") as? NSObject.Type
+    }
+
     func requestPermission(always: Bool) async {
-        locationManager.delegate = self
+        let requestSelector = NSSelectorFromString(always ? "requestAlwaysAuthorization" : "requestWhenInUseAuthorization")
+        guard let locationManager = locationManager, locationManager.responds(to: requestSelector) else {
+            logger.warning("LocationDelegate: CLLocationManager is unavailable; cannot request location permission")
+            return
+        }
+        locationManager.setValue(self, forKey: "delegate")
         await withCheckedContinuation { continuation in
             self.continuation = continuation
-            if always {
-                logger.debug("LocationDelegate: requestAlwaysAuthorization")
-                locationManager.requestAlwaysAuthorization()
-            } else {
-                logger.debug("LocationDelegate: requestWhenInUseAuthorization")
-                locationManager.requestWhenInUseAuthorization()
-            }
+            logger.debug("LocationDelegate: \(always ? "requestAlwaysAuthorization" : "requestWhenInUseAuthorization")")
+            locationManager.perform(requestSelector)
         }
     }
 
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+    /// Invoked by `CLLocationManager` through the Objective-C runtime when the authorization status changes
+    @objc(locationManagerDidChangeAuthorization:)
+    func locationManagerDidChangeAuthorization(_ manager: NSObject) {
         logger.debug("LocationDelegate.locationManagerDidChangeAuthorization")
         continuation?.resume(returning: ())
         continuation = nil // always clear the continuation between checks
