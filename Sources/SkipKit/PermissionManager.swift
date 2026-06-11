@@ -25,7 +25,7 @@ import androidx.core.content.ContextCompat
 #endif
 
 /// Provides an interface for requesting permissions
-public class PermissionManager {
+public final class PermissionManager: Sendable {
     private init() {
     }
 
@@ -242,82 +242,6 @@ public class PermissionManager {
     }
 #endif
 
-#if false // TODO: create framework skip-calendar
-    // ITMS-90683: Missing purpose string in Info.plist - Your app’s code references one or more APIs that access sensitive user data, or the app has one or more entitlements that permit such access. The Info.plist file for the “XXX.app” bundle should contain a NSCalendarsUsageDescription key with a user-facing purpose string explaining clearly and completely why your app needs the data. If you’re using external libraries or SDKs, they may reference APIs that require a purpose string. While your app might not use these APIs, a purpose string is still required. For details, visit: https://developer.apple.com/documentation/uikit/protecting_the_user_s_privacy/requesting_access_to_protected_resources.
-
-
-    public static func queryCalendarPermission(readWrite: Bool = false) -> PermissionAuthorization {
-        #if SKIP
-        return queryPermission(readWrite ? .WRITE_CALENDAR : .READ_CALENDAR)
-        #else
-        return queryEventKitPermission(for: .event)
-        #endif
-    }
-
-    public static func requestCalendarPermission(readWrite: Bool = false) async throws -> PermissionAuthorization {
-        #if SKIP
-        return await requestPermission(readWrite ? .WRITE_CALENDAR : .READ_CALENDAR)
-        #else
-        return try await requestEventKitPermission(for: .event)
-        #endif
-    }
-
-    public static func queryReminderPermission(readWrite: Bool = false) -> PermissionAuthorization {
-        #if SKIP
-        return queryPermission(readWrite ? .WRITE_CALENDAR : .READ_CALENDAR)
-        #else
-        return queryEventKitPermission(for: .reminder)
-        #endif
-    }
-
-    public static func requestReminderPermission(readWrite: Bool = false) async throws -> PermissionAuthorization {
-        #if SKIP
-        return await requestPermission(readWrite ? .WRITE_CALENDAR : .READ_CALENDAR)
-        #else
-        return try await requestEventKitPermission(for: .reminder)
-        #endif
-    }
-
-    #if !SKIP
-    private static func queryEventKitPermission(for eventType: EKEntityType) -> PermissionAuthorization {
-        let status: EKAuthorizationStatus = EKEventStore.authorizationStatus(for: eventType)
-        switch status {
-        case .notDetermined:
-            return .unknown
-        case .restricted:
-            return .restricted
-        case .denied:
-            return .denied
-        case .authorized, .fullAccess, .writeOnly:
-            return .authorized
-        @unknown default:
-            return .unknown
-        }
-    }
-
-    private static func requestEventKitPermission(for eventType: EKEntityType) async throws -> PermissionAuthorization {
-        let status = queryEventKitPermission(for: eventType)
-        if status != .unknown {
-            return status
-        }
-        let eventStore = EKEventStore()
-        if #available(iOS 17.0, macOS 14.0, *) {
-            // On iOS 17 and later, this method doesn’t prompt for access and immediately calls the completion block with an error.
-            switch eventType {
-            case .event:
-                try await eventStore.requestFullAccessToEvents()
-            case .reminder:
-                try await eventStore.requestFullAccessToReminders()
-            @unknown default:
-                break // nothing else to do…
-            }
-        } else {
-            try await eventStore.requestAccess(to: eventType)
-        }
-        return queryEventKitPermission(for: eventType)
-    }
-    #endif
-#endif
 
     public static func queryPhotoLibraryPermission(readWrite: Bool = true) -> PermissionAuthorization {
         #if SKIP
@@ -483,7 +407,7 @@ class LocationDelegate: NSObject, CLLocationManagerDelegate {
 #endif
 
 /// The status of a permission authorization
-public enum PermissionAuthorization : String {
+public enum PermissionAuthorization : String, Sendable {
     /// Authorization status is unknown
     case unknown
     /// The app isn’t authorized to access the permission, and the user can’t grant such permission.

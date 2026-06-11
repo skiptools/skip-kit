@@ -13,10 +13,10 @@ permissions:
 
 jobs:
   call-workflow:
-    uses: skiptools/actions/.github/workflows/skip-framework.yml@main
+    uses: skiptools/actions/.github/workflows/skip-framework.yml@v1
     with:
       # disable local tests because SkipFuseUI requires macOS 14+
-      run-local-tests: false
+      # run-local-tests: false
       # error with Text() constructor
-      run-android-native-build: false
+      # run-android-native-build: false
 
