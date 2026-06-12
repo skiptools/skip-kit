@@ -6,7 +6,7 @@ import SwiftUI
 #if !SKIP
 import Photos
 import AVFoundation
-import CoreLocation
+// NOTE: CoreLocation is intentionally NOT imported; see the comment on LocationDelegate below
 import UserNotifications
 import SystemConfiguration
 #else
@@ -25,7 +25,7 @@ import androidx.core.content.ContextCompat
 #endif
 
 /// Provides an interface for requesting permissions
-public class PermissionManager {
+public final class PermissionManager: Sendable {
     private init() {
     }
 
@@ -242,82 +242,6 @@ public class PermissionManager {
     }
 #endif
 
-#if false // TODO: create framework skip-calendar
-    // ITMS-90683: Missing purpose string in Info.plist - Your app’s code references one or more APIs that access sensitive user data, or the app has one or more entitlements that permit such access. The Info.plist file for the “XXX.app” bundle should contain a NSCalendarsUsageDescription key with a user-facing purpose string explaining clearly and completely why your app needs the data. If you’re using external libraries or SDKs, they may reference APIs that require a purpose string. While your app might not use these APIs, a purpose string is still required. For details, visit: https://developer.apple.com/documentation/uikit/protecting_the_user_s_privacy/requesting_access_to_protected_resources.
-
-
-    public static func queryCalendarPermission(readWrite: Bool = false) -> PermissionAuthorization {
-        #if SKIP
-        return queryPermission(readWrite ? .WRITE_CALENDAR : .READ_CALENDAR)
-        #else
-        return queryEventKitPermission(for: .event)
-        #endif
-    }
-
-    public static func requestCalendarPermission(readWrite: Bool = false) async throws -> PermissionAuthorization {
-        #if SKIP
-        return await requestPermission(readWrite ? .WRITE_CALENDAR : .READ_CALENDAR)
-        #else
-        return try await requestEventKitPermission(for: .event)
-        #endif
-    }
-
-    public static func queryReminderPermission(readWrite: Bool = false) -> PermissionAuthorization {
-        #if SKIP
-        return queryPermission(readWrite ? .WRITE_CALENDAR : .READ_CALENDAR)
-        #else
-        return queryEventKitPermission(for: .reminder)
-        #endif
-    }
-
-    public static func requestReminderPermission(readWrite: Bool = false) async throws -> PermissionAuthorization {
-        #if SKIP
-        return await requestPermission(readWrite ? .WRITE_CALENDAR : .READ_CALENDAR)
-        #else
-        return try await requestEventKitPermission(for: .reminder)
-        #endif
-    }
-
-    #if !SKIP
-    private static func queryEventKitPermission(for eventType: EKEntityType) -> PermissionAuthorization {
-        let status: EKAuthorizationStatus = EKEventStore.authorizationStatus(for: eventType)
-        switch status {
-        case .notDetermined:
-            return .unknown
-        case .restricted:
-            return .restricted
-        case .denied:
-            return .denied
-        case .authorized, .fullAccess, .writeOnly:
-            return .authorized
-        @unknown default:
-            return .unknown
-        }
-    }
-
-    private static func requestEventKitPermission(for eventType: EKEntityType) async throws -> PermissionAuthorization {
-        let status = queryEventKitPermission(for: eventType)
-        if status != .unknown {
-            return status
-        }
-        let eventStore = EKEventStore()
-        if #available(iOS 17.0, macOS 14.0, *) {
-            // On iOS 17 and later, this method doesn’t prompt for access and immediately calls the completion block with an error.
-            switch eventType {
-            case .event:
-                try await eventStore.requestFullAccessToEvents()
-            case .reminder:
-                try await eventStore.requestFullAccessToReminders()
-            @unknown default:
-                break // nothing else to do…
-            }
-        } else {
-            try await eventStore.requestAccess(to: eventType)
-        }
-        return queryEventKitPermission(for: eventType)
-    }
-    #endif
-#endif
 
     public static func queryPhotoLibraryPermission(readWrite: Bool = true) -> PermissionAuthorization {
         #if SKIP
@@ -390,35 +314,37 @@ public class PermissionManager {
         return .unknown
         
         #else
-        let locationManager = LocationDelegate.shared.locationManager
-        let status = locationManager.authorizationStatus
-        let accuracy = locationManager.accuracyAuthorization
+        guard let locationManager = LocationDelegate.shared.locationManager,
+              let status = locationManager.value(forKey: "authorizationStatus") as? Int else {
+            return .unknown
+        }
+        let accuracy = locationManager.value(forKey: "accuracyAuthorization") as? Int
 
         switch status {
-        case .notDetermined:
+        case LocationDelegate.authorizationStatusNotDetermined:
             return .unknown
-        case .restricted:
+        case LocationDelegate.authorizationStatusRestricted:
             return .restricted
-        case .denied:
+        case LocationDelegate.authorizationStatusDenied:
             return .denied
-        case .authorizedAlways:
-            if precise == true && accuracy == .reducedAccuracy {
+        case LocationDelegate.authorizationStatusAuthorizedAlways:
+            if precise == true && accuracy == LocationDelegate.accuracyAuthorizationReducedAccuracy {
                 // requested fullAccuracy, but only coarse was approved
                 return .limited
             } else {
                 return .authorized
             }
-        case .authorizedWhenInUse:
+        case LocationDelegate.authorizationStatusAuthorizedWhenInUse:
             if always == true {
                 // requested always, but only when in use was granted
                 return .limited
-            } else if precise == true && accuracy == .reducedAccuracy {
+            } else if precise == true && accuracy == LocationDelegate.accuracyAuthorizationReducedAccuracy {
                 // requested fullAccuracy, but only coarse was approved
                 return .limited
             } else {
                 return .authorized
             }
-        @unknown default:
+        default:
             return .unknown
         }
         #endif
@@ -448,33 +374,69 @@ public class PermissionManager {
 }
 
 #if !SKIP
-/// A delegate that encapsulates a `CLLocationManager` and handles `locationManagerDidChangeAuthorization`
-class LocationDelegate: NSObject, CLLocationManagerDelegate {
+/// A delegate that encapsulates a `CLLocationManager` and handles `locationManagerDidChangeAuthorization`.
+///
+/// CoreLocation is accessed dynamically through the Objective-C runtime rather than being imported,
+/// because merely linking against CoreLocation.framework causes App Store Connect to require a
+/// location usage purpose string from every app that embeds this library, even apps that never use location.
+class LocationDelegate: NSObject {
     /// For some reason, we need to keep just a single reference to CLLocationManager around for the locationManagerDidChangeAuthorization to get called reliably
     nonisolated(unsafe) static let shared = LocationDelegate()
 
-    lazy var locationManager = CLLocationManager()
+    /// `CLAuthorizationStatus` constants
+    static let authorizationStatusNotDetermined = 0
+    static let authorizationStatusRestricted = 1
+    static let authorizationStatusDenied = 2
+    static let authorizationStatusAuthorizedAlways = 3
+    static let authorizationStatusAuthorizedWhenInUse = 4
+
+    /// `CLAccuracyAuthorization` constants
+    static let accuracyAuthorizationFullAccuracy = 0
+    static let accuracyAuthorizationReducedAccuracy = 1
+
+    /// The shared `CLLocationManager` instance, or nil if the CoreLocation framework could not be loaded
+    lazy var locationManager: NSObject? = LocationDelegate.locationManagerClass()?.init()
+
     var continuation: CheckedContinuation<Void, Never>?
 
     override init() {
         super.init()
     }
 
+    /// Returns the `CLLocationManager` class, loading the CoreLocation system framework if no other module in the app has already linked it
+    private static func locationManagerClass() -> NSObject.Type? {
+        if let managerClass = NSClassFromString("CLLocationManager") as? NSObject.Type {
+            return managerClass
+        }
+        // the unversioned path is the iOS framework layout; the versioned path is the macOS layout
+        for frameworkPath in [
+            "/System/Library/Frameworks/CoreLocation.framework/CoreLocation",
+            "/System/Library/Frameworks/CoreLocation.framework/Versions/A/CoreLocation",
+        ] {
+            if dlopen(frameworkPath, RTLD_LAZY) != nil {
+                break
+            }
+        }
+        return NSClassFromString("CLLocationManager") as? NSObject.Type
+    }
+
     func requestPermission(always: Bool) async {
-        locationManager.delegate = self
+        let requestSelector = NSSelectorFromString(always ? "requestAlwaysAuthorization" : "requestWhenInUseAuthorization")
+        guard let locationManager = locationManager, locationManager.responds(to: requestSelector) else {
+            logger.warning("LocationDelegate: CLLocationManager is unavailable; cannot request location permission")
+            return
+        }
+        locationManager.setValue(self, forKey: "delegate")
         await withCheckedContinuation { continuation in
             self.continuation = continuation
-            if always {
-                logger.debug("LocationDelegate: requestAlwaysAuthorization")
-                locationManager.requestAlwaysAuthorization()
-            } else {
-                logger.debug("LocationDelegate: requestWhenInUseAuthorization")
-                locationManager.requestWhenInUseAuthorization()
-            }
+            logger.debug("LocationDelegate: \(always ? "requestAlwaysAuthorization" : "requestWhenInUseAuthorization")")
+            locationManager.perform(requestSelector)
         }
     }
 
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+    /// Invoked by `CLLocationManager` through the Objective-C runtime when the authorization status changes
+    @objc(locationManagerDidChangeAuthorization:)
+    func locationManagerDidChangeAuthorization(_ manager: NSObject) {
         logger.debug("LocationDelegate.locationManagerDidChangeAuthorization")
         continuation?.resume(returning: ())
         continuation = nil // always clear the continuation between checks
@@ -483,7 +445,7 @@ class LocationDelegate: NSObject, CLLocationManagerDelegate {
 #endif
 
 /// The status of a permission authorization
-public enum PermissionAuthorization : String {
+public enum PermissionAuthorization : String, Sendable {
     /// Authorization status is unknown
     case unknown
     /// The app isn’t authorized to access the permission, and the user can’t grant such permission.
