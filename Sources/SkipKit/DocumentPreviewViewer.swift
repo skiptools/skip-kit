@@ -44,7 +44,7 @@ extension View {
         return onChange(of: isPresented.wrappedValue) { presented in
             if presented == true {
                 
-                let file = java.io.File.init(documentURL!.absoluteString)
+                let file = java.io.File.init(documentURL!.path)
                 let uri = androidx.core.content.FileProvider.getUriForFile(context.asActivity(), context.getPackageName() + ".fileprovider", file)
                 
                 var mimeType: String

@@ -392,12 +392,13 @@ let granted = await PermissionManager.requestPermission("android.permission.SEND
 ## Camera and Media selection
 
 The `View.withMediaPicker(type:isPresented:selectedImageURL:)` extension function
-can be used to enable the acquisition of an image from either the system camera 
-or the user's media library. 
+can be used to enable the acquisition of an image from either the system camera
+or the user's media library. To support picking multiple images from the media
+library, use `View.withMediaPicker(type:isPresented:allowsMultipleSelection:selectedImageURLs:)`.
 
-On iOS, this camera selector will be presented in a `fullScreenCover` view, 
-whereas the media library browser will be presented in a `sheet`. In both cases,
-a standad `UIImagePickerController` will be used to acquire the media.
+On iOS, this camera selector will be presented in a `fullScreenCover` view,
+whereas the media library browser will be presented in a `sheet`. The camera
+uses `UIImagePickerController`, while the media library uses `PHPickerViewController`.
 
 On Android, the camera and library browser will be activated through 
 an Intent after querying for the necessary permissions.
@@ -421,7 +422,33 @@ struct MediaButton : View {
         Button(type == .camera ? "Take Photo" : "Select Media") {
             showPicker = true // activate the media picker
         }
-        .withMediaPicker(type: .camera, isPresented: $showPicker, selectedImageURL: $selectedImageURL)
+        .withMediaPicker(
+            type: type,
+            isPresented: $showPicker,
+            selectedImageURL: $selectedImageURL
+        )
+    }
+}
+```
+
+For multiple media library selections, bind to an array of URLs and pass
+`allowsMultipleSelection: true`:
+
+```swift
+struct MultiMediaButton: View {
+    @Binding var selectedImageURLs: [URL]
+    @State private var showPicker = false
+
+    var body: some View {
+        Button("Select Media") {
+            showPicker = true
+        }
+        .withMediaPicker(
+            type: .library,
+            isPresented: $showPicker,
+            allowsMultipleSelection: true,
+            selectedImageURLs: $selectedImageURLs
+        )
     }
 }
 ```
@@ -499,7 +526,7 @@ For an example of a properly configured project, see the Photo Chat sample appli
 
 ## Document Picker
 
-The `View.withDocumentPicker(isPresented: Binding<Bool>, allowedContentTypes: [UTType], selectedDocumentURL: Binding<URL?>, selectedFilename: Binding<String?>, selectedFileMimeType: Binding<String?>)` extension function can be used to select a document of the specified UTType from the device to use in the App. 
+The `View.withDocumentPicker(isPresented: Binding<Bool>, allowedContentTypes: [UTType], selectedDocumentURL: Binding<URL?>, selectedFilename: Binding<String?>, selectedFileMimeType: Binding<String?>)` extension function can be used to select a document of the specified UTType from the device to use in the App. To support picking multiple documents, use `View.withDocumentPicker(isPresented:allowedContentTypes:allowsMultipleSelection:selectedDocumentURLs:selectedFilenames:selectedFileMimeTypes:)`.
 
 On iOS it will use an instance of `FileImporter` to display the system file picker, essentially allowing to select a file from the Files application, while on Android it relies on the the system document picker via the Activity result for the `ACTION_OPEN_DOCUMENT`. Once the user selects a file it will receive an `uri`, that need to be parsed to be used outside the scope of the caller. For doing so it will copy the file inside the App cache folder and expose the cached url instead of the original picked file url. 
 
@@ -510,8 +537,37 @@ Button("Pick Document") {
     presentPreview = true
 }
 .buttonStyle(.borderedProminent)
-.withDocumentPicker(isPresented: $presentPreview, allowedContentTypes: [.image, .pdf], selectedDocumentURL: $selectedDocument, selectedFilename: $filename, selectedFileMimeType: $mimeType)
+.withDocumentPicker(
+    isPresented: $presentPreview,
+    allowedContentTypes: [.image, .pdf],
+    selectedDocumentURL: $selectedDocument,
+    selectedFilename: $filename,
+    selectedFileMimeType: $mimeType
+)
 ```
+
+For multiple document selections, bind to arrays of selected URLs, filenames,
+and MIME types:
+
+```swift
+Button("Pick Documents") {
+    presentPreview = true
+}
+.buttonStyle(.borderedProminent)
+.withDocumentPicker(
+    isPresented: $presentPreview,
+    allowedContentTypes: [.image, .pdf],
+    allowsMultipleSelection: true,
+    selectedDocumentURLs: $selectedDocuments,
+    selectedFilenames: $filenames,
+    selectedFileMimeTypes: $mimeTypes
+)
+```
+
+On Android, the system document picker controls the multiple-selection user
+interface. Depending on the provider, tapping a document may immediately return
+that single item; selecting multiple documents typically requires entering the
+picker's selection mode, for example by long-pressing the first item.
 
 ### Security-Scoped URLs on iOS
 
@@ -541,7 +597,7 @@ On iOS, files selected through the system document picker are *security-scoped* 
 }
 ```
 
-This is only needed on iOS — Android handles file access differently by copying the selected file to the app's cache directory before returning the URL, so the `#if !SKIP` guard ensures the security-scoped calls are skipped on Android.
+This is only needed on iOS — Android handles file access differently by copying the selected file to the app's cache directory before returning the URL, so the `#if !SKIP` guard ensures the security-scoped calls are skipped on Android. The same applies when using the array-based `selectedDocumentURLs` binding.
 
 If you only need to display the file (e.g., pass it to a `DocumentPreview`) without reading its contents, re-acquiring access may not be necessary.
 
