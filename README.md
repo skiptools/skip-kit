@@ -827,6 +827,83 @@ extension View {
 }
 ```
 
+## BiometricAuthentication
+
+SkipKit provides a cross-platform biometric authentication API for checking the available biometric capability and presenting the platform authentication prompt.
+
+### Checking Availability
+
+Use `BiometricAuthentication.authenticationType` to check whether biometric authentication is available. On iOS, SkipKit reports the concrete biometric type as `.fingerprint` for Touch ID or `.facialRecognition` for Face ID. On Android, SkipKit reports `.unspecified` because Android exposes biometric availability without reliably identifying the active biometric modality.
+
+```swift
+import SkipKit
+
+switch BiometricAuthentication.authenticationType {
+case .fingerprint:
+    print("Fingerprint authentication is available")
+case .facialRecognition:
+    print("Facial recognition is available")
+case .unspecified:
+    print("Biometric authentication is available")
+case .none:
+    print("No biometric authentication is available")
+}
+```
+
+For simple availability checks, use `canAuthenticate`:
+
+```swift
+if BiometricAuthentication.canAuthenticate {
+    print("Biometric authentication can be used")
+}
+```
+
+### Authenticating
+
+Call `authenticate(localizedReason:allowsDeviceCredentialFallback:completion:)` to show the system biometric authentication prompt:
+
+```swift
+BiometricAuthentication.authenticate(
+    localizedReason: "Unlock the app"
+) { result in
+    switch result {
+    case .success:
+        print("Authenticated")
+    case .cancelled:
+        print("Cancelled")
+    case .failed:
+        print("Failed")
+    case .unavailable:
+        print("Unavailable")
+    }
+}
+```
+
+By default, `allowsDeviceCredentialFallback` is `false`. On Android, this means the biometric prompt shows a cancel button. If you set `allowsDeviceCredentialFallback` to `true`, Android allows the device PIN, pattern, or password as a system fallback instead:
+
+```swift
+BiometricAuthentication.authenticate(
+    localizedReason: "Unlock the app",
+    allowsDeviceCredentialFallback: true
+) { result in
+    // Handle the result.
+}
+```
+
+Use `allowsDeviceCredentialFallback: false` when your app presents its own passcode screen after cancellation. Use `true` when the platform device credential should complete authentication directly.
+
+### Platform Notes
+
+On iOS, `BiometricAuthentication` uses `LocalAuthentication.LAContext`. When `allowsDeviceCredentialFallback` is `true`, iOS uses `.deviceOwnerAuthentication`; otherwise it uses `.deviceOwnerAuthenticationWithBiometrics`. On Android, SkipKit uses AndroidX `BiometricPrompt` with strong biometric authenticators. When `allowsDeviceCredentialFallback` is `true`, Android uses `BIOMETRIC_STRONG | DEVICE_CREDENTIAL` and does not show a negative button, because AndroidX does not allow a negative button together with device credentials.
+
+### Android Permissions
+
+Android apps using biometric authentication must include the biometric permission in their manifest:
+
+```xml
+<uses-permission android:name="android.permission.USE_BIOMETRIC" />
+```
+
 ## HapticFeedback
 
 SkipKit provides a cross-platform haptic feedback API that works identically on iOS and Android. You define patterns using simple, platform-independent types, and SkipKit handles playback using [CoreHaptics](https://developer.apple.com/documentation/corehaptics) on iOS and [VibrationEffect.Composition](https://developer.android.com/reference/android/os/VibrationEffect.Composition) on Android.
