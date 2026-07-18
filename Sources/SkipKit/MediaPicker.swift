@@ -23,6 +23,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat.startActivity
 #endif
 
+#if !SKIP && os(iOS)
+import PhotosUI
+#endif
+
 public enum MediaPickerType {
     case camera, library
 }
@@ -53,8 +57,15 @@ extension View {
             #if !SKIP
             #if os(iOS)
             sheet(isPresented: isPresented) {
-                PhotoLibraryPicker(sourceType: .photoLibrary, selectedImageURL: selectedImageURL)
-                    .presentationDetents([.medium])
+                PhotoLibraryPicker(allowsMultipleSelection: false, selectedImageURLs: Binding(
+                    get: {
+                        if let value = selectedImageURL.wrappedValue {
+                            return [value]
+                        }
+                        return []
+                    },
+                    set: { selectedImageURL.wrappedValue = $0.first }
+                ))
             }
             #endif
             #else
@@ -69,6 +80,7 @@ extension View {
 
             return onChange(of: isPresented.wrappedValue) { presented in
                 if presented == true {
+                    isPresented.wrappedValue = false
                     pickImageLauncher.launch("image/*")
                 }
             }
@@ -78,7 +90,8 @@ extension View {
             #if !SKIP
             #if os(iOS)
             fullScreenCover(isPresented: isPresented) {
-                PhotoLibraryPicker(sourceType: .camera, selectedImageURL: selectedImageURL)
+                CameraImagePicker(selectedImageURL: selectedImageURL)
+                    .ignoresSafeArea()
             }
             #endif
             #else
@@ -109,6 +122,7 @@ extension View {
                         ActivityCompat.requestPermissions(context.asActivity(), perms, PERM_REQUEST_CAMERA)
                         isPresented.wrappedValue = false
                     } else {
+                        isPresented.wrappedValue = false
                         let storageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
                         let ext = ".jpg"
                         let tmpFile = java.io.File.createTempFile("SkipKit_\(UUID().uuidString)", ext, storageDir)
@@ -124,19 +138,80 @@ extension View {
             #endif
         }
     }
+
+    /// Enables a media picker interface for the camera or photo library can be activated through the `isPresented` binding, and which returns selected images through the `selectedImageURLs` binding.
+    ///
+    /// On iOS and Android, `allowsMultipleSelection` only applies to the photo library.
+    @ViewBuilder public func withMediaPicker(type: MediaPickerType, isPresented: Binding<Bool>, allowsMultipleSelection: Bool, selectedImageURLs: Binding<[URL]>) -> some View {
+        switch type {
+        case .library:
+            #if !SKIP
+            #if os(iOS)
+            sheet(isPresented: isPresented) {
+                PhotoLibraryPicker(allowsMultipleSelection: allowsMultipleSelection, selectedImageURLs: selectedImageURLs)
+            }
+            #endif
+            #else
+            if allowsMultipleSelection {
+                let pickImagesLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.GetMultipleContents()) { uris in
+                    isPresented.wrappedValue = false
+                    var urls = [URL]()
+                    for uri in uris {
+                        urls.append(URL(platformValue: java.net.URI.create(uri.toString())))
+                    }
+                    selectedImageURLs.wrappedValue = urls
+                }
+
+                return onChange(of: isPresented.wrappedValue) { presented in
+                    if presented == true {
+                        isPresented.wrappedValue = false
+                        pickImagesLauncher.launch("image/*")
+                    }
+                }
+            } else {
+                let pickImageLauncher = rememberLauncherForActivityResult(contract: ActivityResultContracts.GetContent()) { uri in
+                    isPresented.wrappedValue = false // clear the presented bit
+                    logger.log("pickImageLauncher: \(uri)")
+                    if let uri = uri {
+                        selectedImageURLs.wrappedValue = [URL(platformValue: java.net.URI.create(uri.toString()))]
+                    }
+                }
+
+                return onChange(of: isPresented.wrappedValue) { presented in
+                    if presented == true {
+                        isPresented.wrappedValue = false
+                        pickImageLauncher.launch("image/*")
+                    }
+                }
+            }
+            #endif
+
+        case .camera:
+            withMediaPicker(type: type, isPresented: isPresented, selectedImageURL: Binding(
+                get: { selectedImageURLs.wrappedValue.first },
+                set: {
+                    if let value = $0 {
+                        selectedImageURLs.wrappedValue = [value]
+                    } else {
+                        selectedImageURLs.wrappedValue = []
+                    }
+                }
+            ))
+        }
+    }
 }
 
 #if !SKIP
 #if os(iOS)
-struct PhotoLibraryPicker: UIViewControllerRepresentable {
-    let sourceType: UIImagePickerController.SourceType
+struct CameraImagePicker: UIViewControllerRepresentable {
     @Binding var selectedImageURL: URL?
     @Environment(\.dismiss) var dismiss
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let imagePicker = UIImagePickerController()
         imagePicker.delegate = context.coordinator
-        imagePicker.sourceType = sourceType
+        imagePicker.sourceType = .camera
+        imagePicker.view.backgroundColor = .black
         return imagePicker
     }
 
@@ -149,9 +224,9 @@ struct PhotoLibraryPicker: UIViewControllerRepresentable {
     }
 
     class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
-        let parent: PhotoLibraryPicker
+        let parent: CameraImagePicker
 
-        init(_ parent: PhotoLibraryPicker) {
+        init(_ parent: CameraImagePicker) {
             self.parent = parent
         }
 
@@ -186,6 +261,89 @@ struct PhotoLibraryPicker: UIViewControllerRepresentable {
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
             logger.info("imagePickerControllerDidCancel")
             parent.dismiss()
+        }
+    }
+}
+
+struct PhotoLibraryPicker: UIViewControllerRepresentable {
+    let allowsMultipleSelection: Bool
+    @Binding var selectedImageURLs: [URL]
+    @Environment(\.dismiss) var dismiss
+
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var configuration = PHPickerConfiguration(photoLibrary: .shared())
+        configuration.filter = .images
+        configuration.selectionLimit = allowsMultipleSelection ? 0 : 1
+
+        let picker = PHPickerViewController(configuration: configuration)
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {
+
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    final class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let parent: PhotoLibraryPicker
+
+        init(_ parent: PhotoLibraryPicker) {
+            self.parent = parent
+        }
+
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            guard !results.isEmpty else {
+                self.parent.dismiss()
+                return
+            }
+
+            let dispatchGroup = DispatchGroup()
+            var selectedURLs = Array<URL?>(repeating: nil, count: results.count)
+            let lock = NSLock()
+
+            for (index, result) in results.enumerated() {
+                let provider = result.itemProvider
+                guard provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) else {
+                    continue
+                }
+
+                dispatchGroup.enter()
+                provider.loadFileRepresentation(forTypeIdentifier: UTType.image.identifier) { url, error in
+                    defer { dispatchGroup.leave() }
+
+                    if let error {
+                        logger.warning("PhotoLibraryPicker load error: \(error)")
+                        return
+                    }
+
+                    guard let url else {
+                        return
+                    }
+
+                    let fileExtension = url.pathExtension.isEmpty ? "jpg" : url.pathExtension
+                    let destinationURL = URL.temporaryDirectory
+                        .appendingPathComponent(UUID().uuidString)
+                        .appendingPathExtension(fileExtension)
+
+                    do {
+                        try FileManager.default.copyItem(at: url, to: destinationURL)
+                        lock.lock()
+                        selectedURLs[index] = destinationURL
+                        lock.unlock()
+                    } catch {
+                        logger.warning("PhotoLibraryPicker copy error: \(error)")
+                    }
+                }
+            }
+
+            dispatchGroup.notify(queue: .main) {
+                self.parent.selectedImageURLs = selectedURLs.compactMap { $0 }
+                self.parent.dismiss()
+            }
         }
     }
 }
