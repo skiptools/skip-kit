@@ -950,11 +950,24 @@ Use `allowsDeviceCredentialFallback: false` when your app presents its own passc
 
 ### Platform Notes
 
-On iOS, `BiometricAuthentication` uses `LocalAuthentication.LAContext`. When `allowsDeviceCredentialFallback` is `true`, iOS uses `.deviceOwnerAuthentication`; otherwise it uses `.deviceOwnerAuthenticationWithBiometrics`. On Android, SkipKit uses AndroidX `BiometricPrompt` with strong biometric authenticators. When `allowsDeviceCredentialFallback` is `true`, Android uses `BIOMETRIC_STRONG | DEVICE_CREDENTIAL` and does not show a negative button, because AndroidX does not allow a negative button together with device credentials.
+#### Darwin
+* On iOS/iPadOS/macOS, SkipKit uses `LocalAuthentication.LAContext`.
+* When `allowsDeviceCredentialFallback` is `true`, the system uses `.deviceOwnerAuthentication`; otherwise, it uses `.deviceOwnerAuthenticationWithBiometrics`.
 
-### Android Permissions
+iOS/iPadOS Apps using biometric authentication with Face ID must include `NSFaceIDUsageDescription` in their `Info.plist`:
 
-Android apps using biometric authentication must include the biometric permission in their manifest:
+```xml
+<key>NSFaceIDUsageDescription</key>
+<string>Use Face ID to securely unlock the app.</string>
+```
+
+If Face ID is requested without this usage description, iOS/iPadOS will terminate the app. Touch ID does not require a separate usage-description key.
+
+#### Android
+* On Android, SkipKit uses AndroidX `BiometricPrompt` with strong biometric authenticators.
+* When `allowsDeviceCredentialFallback` is `true`, the system uses `BIOMETRIC_STRONG | DEVICE_CREDENTIAL`. In this mode, the prompt will not show a cancel button, because AndroidX does not allow a cancel button together with device credentials.
+
+Android apps using biometric authentication must include the biometric permission in their `AndroidManifest.xml`:
 
 ```xml
 <uses-permission android:name="android.permission.USE_BIOMETRIC" />
