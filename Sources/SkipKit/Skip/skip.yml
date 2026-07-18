@@ -9,4 +9,5 @@ build:
     - block: 'dependencies'
       export: false
       contents:
+        - 'implementation("androidx.biometric:biometric:1.1.0")'
         - 'implementation("androidx.browser:browser:1.10.0")'
