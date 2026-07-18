@@ -22,7 +22,7 @@ final class SkipKitTests: XCTestCase {
 
         var addedKeys = Set<UUID>()
         // Cache has no `count` accessor, so we brute-force check for the existance of every key we have added
-        var cacheCount = { addedKeys.compactMap({ cache[$0] }).count }
+        let cacheCount = { addedKeys.compactMap({ cache[$0] }).count }
 
         @discardableResult func addData(size: Int) -> UUID {
             let key = UUID()

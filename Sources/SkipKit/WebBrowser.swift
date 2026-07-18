@@ -126,7 +126,7 @@ extension View {
             }
             #elseif os(macOS)
             // macOS does not have SFSafariViewController; fall back to system browser
-            self.onChange(of: isPresented.wrappedValue) { oldPresented, newPresented in
+            self.onChange(of: isPresented.wrappedValue) { newPresented in
                 if newPresented {
                     NSWorkspace.shared.open(url)
                     isPresented.wrappedValue = false
