@@ -395,7 +395,15 @@ class LocationDelegate: NSObject {
     static let accuracyAuthorizationReducedAccuracy = 1
 
     /// The shared `CLLocationManager` instance, or nil if the CoreLocation framework could not be loaded
-    lazy var locationManager: NSObject? = LocationDelegate.locationManagerClass()?.init()
+    lazy var locationManager: NSObject? = {
+        if Thread.isMainThread {
+            return LocationDelegate.locationManagerClass()?.init()
+        } else {
+            return DispatchQueue.main.asyncAndWait {
+                LocationDelegate.locationManagerClass()?.init()
+            }
+        }
+    }()
 
     var continuation: CheckedContinuation<Void, Never>?
 
