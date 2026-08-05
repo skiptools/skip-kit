@@ -306,8 +306,9 @@ private func resolvePickedDocument(
 
 #if !SKIP
 private struct ExportedDocument: FileDocument {
-    static var readableContentTypes: [UTType] { Self.writableContentTypes }
-    static var writableContentTypes: [UTType] { [.data, .plainText, .commaSeparatedText] }
+    private static let contentTypes: [UTType] = [.data, .plainText, .commaSeparatedText, .pdf, .jpeg, .png]
+    static var readableContentTypes: [UTType] { contentTypes }
+    static var writableContentTypes: [UTType] { contentTypes }
 
     let url: URL?
 
@@ -320,11 +321,8 @@ private struct ExportedDocument: FileDocument {
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        guard let url else {
-            return FileWrapper(regularFileWithContents: Data())
-        }
-
-        return FileWrapper(regularFileWithContents: try Data(contentsOf: url))
+        let data = try url.map { try Data(contentsOf: $0) } ?? Data()
+        return FileWrapper(regularFileWithContents: data)
     }
 }
 #endif
