@@ -601,6 +601,38 @@ This is only needed on iOS — Android handles file access differently by copyin
 
 If you only need to display the file (e.g., pass it to a `DocumentPreview`) without reading its contents, re-acquiring access may not be necessary.
 
+## Document Exporter
+
+The `View.withDocumentExporter(isPresented:contentType:documentURL:onCompletion:)` extension function can be used to export a local file to a user-selected destination.
+
+On iOS, it uses SwiftUI's `fileExporter` to display the system export dialog. On Android, it uses the system document creator via `ACTION_CREATE_DOCUMENT` and copies the source file to the selected location.
+
+For example:
+
+```swift
+Button("Export Photo") {
+    if let url = Bundle.module.url(forResource: "photo", withExtension: "png") {
+        exportDocumentURL = url
+        presentDocumentExporter = true
+    }
+}
+.buttonStyle(.borderedProminent)
+.withDocumentExporter(
+    isPresented: $presentDocumentExporter,
+    contentType: .png,
+    documentURL: exportDocumentURL
+) { result in
+    switch result {
+    case .success(let url):
+        print("Exported to \(url)")
+    case .failure(let error):
+        print("Export failed: \(error)")
+    }
+}
+```
+
+On Android, `documentURL` must point to a real file that the app can read. Bundle resources may resolve to `jar:file:` URLs inside the APK, so copy bundled data to the app cache before exporting it.
+
 ## Mail Composer
 
 The `View.withMailComposer()` modifier presents a system email composition interface, allowing users to compose and send emails from within your app.
