@@ -330,7 +330,7 @@ final class SkipKitTests: XCTestCase {
         XCTAssertEqual(skipKitPackage?.licenseConcluded, "MPL-2.0")
         XCTAssertEqual(skipKitPackage?.copyrightText, "Copyright 2025 Skip")
         XCTAssertEqual(skipKitPackage?.primaryPackagePurpose, "LIBRARY")
-        XCTAssertEqual(skipKitPackage?.downloadLocation, "https://source.skip.tools/skip-kit.git")
+        XCTAssertEqual(skipKitPackage?.downloadLocation, "https://github.com/skiptools/skip-kit.git")
         XCTAssertEqual(skipKitPackage?.filesAnalyzed, false)
         XCTAssertEqual(skipKitPackage?.externalRefs?.count, 1)
         XCTAssertEqual(skipKitPackage?.externalRefs?.first?.referenceType, "swiftpm")

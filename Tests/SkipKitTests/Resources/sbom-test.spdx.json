@@ -28,11 +28,11 @@
     {
       "SPDXID" : "SPDXRef-Package-skip-kit",
       "copyrightText" : "Copyright 2025 Skip",
-      "downloadLocation" : "https://source.skip.tools/skip-kit.git",
+      "downloadLocation" : "https://github.com/skiptools/skip-kit.git",
       "externalRefs" : [
         {
           "referenceCategory" : "PACKAGE-MANAGER",
-          "referenceLocator" : "https://source.skip.tools/skip-kit.git",
+          "referenceLocator" : "https://github.com/skiptools/skip-kit.git",
           "referenceType" : "swiftpm"
         }
       ],
