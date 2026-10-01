@@ -416,7 +416,7 @@ import SkipKit
 struct MediaButton : View {
     let type: MediaPickerType // either .camera or .library
     @Binding var selectedImageURL: URL?
-    @State private var showPicker = false
+    @State var showPicker = false
 
     var body: some View {
         Button(type == .camera ? "Take Photo" : "Select Media") {
