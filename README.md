@@ -415,8 +415,8 @@ import SkipKit
 /// which can be observed with `onChange` to perform an action when the media URL is acquired.
 struct MediaButton : View {
     let type: MediaPickerType // either .camera or .library
-    @Binding var selectedImageURL: URL?
     @State var showPicker = false
+    @Binding var selectedImageURL: URL?
 
     var body: some View {
         Button(type == .camera ? "Take Photo" : "Select Media") {
