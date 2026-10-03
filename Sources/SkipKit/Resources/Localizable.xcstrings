@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "About this Bill of Materials" : {
-
-    },
     "Appearance" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -32,24 +29,6 @@
           }
         }
       }
-    },
-    "Bill of Materials" : {
-
-    },
-    "Checksums" : {
-
-    },
-    "Comments" : {
-
-    },
-    "Concluded" : {
-
-    },
-    "Copyright" : {
-
-    },
-    "Created" : {
-
     },
     "Dark" : {
       "extractionState" : "stale",
@@ -80,33 +59,6 @@
         }
       }
     },
-    "Data License" : {
-
-    },
-    "Declared" : {
-
-    },
-    "Dependencies (%lld)" : {
-
-    },
-    "Description" : {
-
-    },
-    "Display Mode" : {
-
-    },
-    "Download" : {
-
-    },
-    "External References" : {
-
-    },
-    "Flattened" : {
-
-    },
-    "Generator" : {
-
-    },
     "Hello %@!" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -135,41 +87,6 @@
           }
         }
       }
-    },
-    "Hierarchical" : {
-
-    },
-    "Home" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inicio"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accueil"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ホーム"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "主页"
-          }
-        }
-      }
-    },
-    "Homepage" : {
-
     },
     "Item %lld" : {
       "extractionState" : "stale",
@@ -200,15 +117,6 @@
         }
       }
     },
-    "License" : {
-
-    },
-    "License Name" : {
-
-    },
-    "License Text" : {
-
-    },
     "Light" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -237,40 +145,6 @@
           }
         }
       }
-    },
-    "Name" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nombre"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nom"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "名前"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "姓名"
-          }
-        }
-      }
-    },
-    "Originator" : {
-
-    },
-    "Package" : {
-
     },
     "Powered by %@" : {
       "extractionState" : "stale",
@@ -301,9 +175,6 @@
         }
       }
     },
-    "Purpose" : {
-
-    },
     "Screen %lld" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -332,9 +203,6 @@
           }
         }
       }
-    },
-    "See Also" : {
-
     },
     "Settings" : {
       "extractionState" : "stale",
@@ -365,27 +233,6 @@
         }
       }
     },
-    "Share Bill of Materials" : {
-
-    },
-    "Software Bill of Materials" : {
-
-    },
-    "Source" : {
-
-    },
-    "SPDX ID" : {
-
-    },
-    "SPDX Version" : {
-
-    },
-    "Summary" : {
-
-    },
-    "Supplier" : {
-
-    },
     "System" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -414,24 +261,6 @@
           }
         }
       }
-    },
-    "Tap “View License on spdx.org” to read the full text of recognised open-source licenses." : {
-
-    },
-    "These packages are pulled in transitively by %@." : {
-
-    },
-    "This app includes the open-source software listed above. Tap a dependency to view its license and version information." : {
-
-    },
-    "This app includes the open-source software listed above. Tap a dependency to view its license, version information, and any further dependencies it brings in." : {
-
-    },
-    "Version" : {
-
-    },
-    "View License on spdx.org" : {
-
     },
     "Welcome" : {
       "extractionState" : "stale",
