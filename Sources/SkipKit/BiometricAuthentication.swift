@@ -31,7 +31,9 @@ public enum BiometricAuthentication {
 
     // MARK: - Properties
     public static var authenticationType: BiometricAuthenticationType {
-        #if !SKIP
+        #if os(watchOS)
+        return .none
+        #elseif !SKIP
         let context = LAContext()
         var error: NSError?
 
@@ -83,7 +85,11 @@ public enum BiometricAuthentication {
         allowsDeviceCredentialFallback: Bool = false,
         completion: @escaping @MainActor (BiometricAuthenticationResult) -> Void
     ) {
-        #if !SKIP
+        #if os(watchOS)
+        Task { @MainActor in
+            completion(.unavailable)
+        }
+        #elseif !SKIP
         let context = LAContext()
         let policy: LAPolicy = allowsDeviceCredentialFallback
             ? .deviceOwnerAuthentication
