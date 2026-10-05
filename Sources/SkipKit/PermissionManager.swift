@@ -4,11 +4,13 @@
 import Foundation
 import SwiftUI
 #if !SKIP
+#if canImport(Photos)
 import Photos
+#endif
 import AVFoundation
 // NOTE: CoreLocation is intentionally NOT imported; see the comment on LocationDelegate below
 import UserNotifications
-import SystemConfiguration
+
 #else
 import android.Manifest
 import android.os.Build
@@ -143,6 +145,8 @@ public final class PermissionManager: Sendable {
     public static func queryCameraPermission() -> PermissionAuthorization {
         #if SKIP
         return queryPermission(.CAMERA)
+        #elseif os(watchOS)
+        return .restricted
         #else
         return queryAVPermission(for: .video)
         #endif
@@ -152,6 +156,8 @@ public final class PermissionManager: Sendable {
     public static func requestCameraPermission() async -> PermissionAuthorization {
         #if SKIP
         return await requestPermission(.CAMERA)
+        #elseif os(watchOS)
+        return .restricted
         #else
         return await requestAVPermission(for: .video)
         #endif
@@ -161,6 +167,13 @@ public final class PermissionManager: Sendable {
     public static func queryRecordAudioPermission() -> PermissionAuthorization {
         #if SKIP
         return queryPermission(.RECORD_AUDIO)
+        #elseif os(watchOS)
+        switch AVAudioSession.sharedInstance().recordPermission {
+        case .granted: return .authorized
+        case .denied: return .denied
+        case .undetermined: return .unknown
+        @unknown default: return .unknown
+        }
         #else
         return queryAVPermission(for: .audio)
         #endif
@@ -170,12 +183,18 @@ public final class PermissionManager: Sendable {
     public static func requestRecordAudioPermission() async -> PermissionAuthorization {
         #if SKIP
         return await requestPermission(.RECORD_AUDIO)
+        #elseif os(watchOS)
+        return await withCheckedContinuation { continuation in
+            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                continuation.resume(returning: granted ? .authorized : .denied)
+            }
+        }
         #else
         return await requestAVPermission(for: .audio)
         #endif
     }
 
-    #if !SKIP
+    #if !SKIP && !os(watchOS)
     private static func queryAVPermission(for mediaType: AVMediaType) -> PermissionAuthorization {
         let status: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: mediaType)
         switch status {
@@ -246,6 +265,8 @@ public final class PermissionManager: Sendable {
     public static func queryPhotoLibraryPermission(readWrite: Bool = true) -> PermissionAuthorization {
         #if SKIP
         return queryPermission(readWrite ? .WRITE_EXTERNAL_STORAGE : .READ_EXTERNAL_STORAGE)
+        #elseif os(watchOS)
+        return .restricted
         #else
         let status: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: readWrite ? .readWrite : .addOnly)
 
@@ -270,6 +291,8 @@ public final class PermissionManager: Sendable {
     public static func requestPhotoLibraryPermission(readWrite: Bool = true) async -> PermissionAuthorization {
         #if SKIP
         return await requestPermission(readWrite ? .WRITE_EXTERNAL_STORAGE : .READ_EXTERNAL_STORAGE)
+        #elseif os(watchOS)
+        return .restricted
         #else
         let status = queryPhotoLibraryPermission(readWrite: readWrite)
         if status != .unknown {

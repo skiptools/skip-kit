@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: MPL-2.0
 #if !SKIP_BRIDGE
 import Foundation
+#if os(watchOS)
+import WatchKit
+#endif
 import SwiftUI
 
 #if SKIP
@@ -14,7 +17,7 @@ import android.os.Build
 import android.util.DisplayMetrics
 import android.view.WindowManager
 #else
-#if canImport(UIKit)
+#if canImport(UIKit) && !os(watchOS)
 import UIKit
 #endif
 #if canImport(Network)
@@ -89,7 +92,9 @@ public final class DeviceInfo {
         let context = ProcessInfo.processInfo.androidContext
         let dm = context.getResources().getDisplayMetrics()
         return Double(dm.widthPixels) / Double(dm.density)
-        #elseif canImport(UIKit)
+        #elseif os(watchOS)
+        return Double(WKInterfaceDevice.current().screenBounds.width)
+        #elseif canImport(UIKit) && !os(watchOS)
         return MainActor.assumeIsolated { Double(UIScreen.main.bounds.width) }
         #elseif os(macOS)
         return Double(NSScreen.main?.frame.width ?? 0)
@@ -104,7 +109,9 @@ public final class DeviceInfo {
         let context = ProcessInfo.processInfo.androidContext
         let dm = context.getResources().getDisplayMetrics()
         return Double(dm.heightPixels) / Double(dm.density)
-        #elseif canImport(UIKit)
+        #elseif os(watchOS)
+        return Double(WKInterfaceDevice.current().screenBounds.height)
+        #elseif canImport(UIKit) && !os(watchOS)
         return MainActor.assumeIsolated { Double(UIScreen.main.bounds.height) }
         #elseif os(macOS)
         return Double(NSScreen.main?.frame.height ?? 0)
@@ -118,7 +125,9 @@ public final class DeviceInfo {
         #if SKIP
         let context = ProcessInfo.processInfo.androidContext
         return Double(context.getResources().getDisplayMetrics().density)
-        #elseif canImport(UIKit)
+        #elseif os(watchOS)
+        return Double(WKInterfaceDevice.current().screenScale)
+        #elseif canImport(UIKit) && !os(watchOS)
         return MainActor.assumeIsolated { Double(UIScreen.main.scale) }
         #elseif os(macOS)
         return Double(NSScreen.main?.backingScaleFactor ?? 1.0)
@@ -145,7 +154,7 @@ public final class DeviceInfo {
         } else {
             return .phone
         }
-        #elseif canImport(UIKit)
+        #elseif canImport(UIKit) && !os(watchOS)
         return MainActor.assumeIsolated {
             switch UIDevice.current.userInterfaceIdiom {
             case .phone: return .phone
@@ -232,7 +241,7 @@ public final class DeviceInfo {
         let level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
         if level < 0 { return nil }
         return Double(level) / 100.0
-        #elseif canImport(UIKit)
+        #elseif canImport(UIKit) && !os(watchOS)
         return MainActor.assumeIsolated {
             let device = UIDevice.current
             let wasEnabled = device.isBatteryMonitoringEnabled
@@ -261,7 +270,7 @@ public final class DeviceInfo {
             return level >= 100 ? .full : .charging
         }
         return .unplugged
-        #elseif canImport(UIKit)
+        #elseif canImport(UIKit) && !os(watchOS)
         return MainActor.assumeIsolated {
             let device = UIDevice.current
             let wasEnabled = device.isBatteryMonitoringEnabled
