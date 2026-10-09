@@ -8,7 +8,6 @@ import ObjectiveC
 import UserNotifications
 // NOTE: Camera, microphone, photo library, and location permissions intentionally avoid static
 //       sensitive-framework symbols; see the dynamic permission helper comments below.
-
 #else
 import android.Manifest
 import android.os.Build
