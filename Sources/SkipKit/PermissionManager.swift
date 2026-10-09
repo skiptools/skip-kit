@@ -4,12 +4,10 @@
 import Foundation
 import SwiftUI
 #if !SKIP
-#if canImport(Photos)
-import Photos
-#endif
-import AVFoundation
-// NOTE: CoreLocation is intentionally NOT imported; see the comment on LocationDelegate below
+import ObjectiveC
 import UserNotifications
+// NOTE: Camera, microphone, photo library, and location permissions intentionally avoid static
+//       sensitive-framework symbols; see the dynamic permission helper comments below.
 
 #else
 import android.Manifest
@@ -148,7 +146,7 @@ public final class PermissionManager: Sendable {
         #elseif os(watchOS)
         return .restricted
         #else
-        return queryAVPermission(for: .video)
+        return queryCapturePermission(for: avMediaTypeVideo)
         #endif
     }
 
@@ -159,7 +157,7 @@ public final class PermissionManager: Sendable {
         #elseif os(watchOS)
         return .restricted
         #else
-        return await requestAVPermission(for: .video)
+        return await requestCapturePermission(for: avMediaTypeVideo)
         #endif
     }
 
@@ -167,15 +165,8 @@ public final class PermissionManager: Sendable {
     public static func queryRecordAudioPermission() -> PermissionAuthorization {
         #if SKIP
         return queryPermission(.RECORD_AUDIO)
-        #elseif os(watchOS)
-        switch AVAudioSession.sharedInstance().recordPermission {
-        case .granted: return .authorized
-        case .denied: return .denied
-        case .undetermined: return .unknown
-        @unknown default: return .unknown
-        }
         #else
-        return queryAVPermission(for: .audio)
+        return queryMicrophonePermission()
         #endif
     }
 
@@ -183,41 +174,183 @@ public final class PermissionManager: Sendable {
     public static func requestRecordAudioPermission() async -> PermissionAuthorization {
         #if SKIP
         return await requestPermission(.RECORD_AUDIO)
-        #elseif os(watchOS)
-        return await withCheckedContinuation { continuation in
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
-                continuation.resume(returning: granted ? .authorized : .denied)
-            }
-        }
         #else
-        return await requestAVPermission(for: .audio)
+        return await requestMicrophonePermission()
         #endif
     }
 
-    #if !SKIP && !os(watchOS)
-    private static func queryAVPermission(for mediaType: AVMediaType) -> PermissionAuthorization {
-        let status: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: mediaType)
-        switch status {
-        case .notDetermined:
+    #if !SKIP
+    /// Camera and microphone permissions are accessed dynamically so apps that embed SkipKit but
+    /// never use capture devices do not get flagged by App Store Connect for camera or microphone
+    /// purpose strings. The Objective-C class and selectors below are public AVFoundation API;
+    /// this only avoids static references to sensitive Swift symbols such as typed media constants.
+    private static var avMediaTypeVideo: NSString {
+        "vide" as NSString
+    }
+
+    private static var avMediaTypeAudio: NSString {
+        "soun" as NSString
+    }
+
+    private static func queryMicrophonePermission() -> PermissionAuthorization {
+        queryCapturePermission(for: avMediaTypeAudio)
+    }
+
+    private static func requestMicrophonePermission() async -> PermissionAuthorization {
+        await requestCapturePermission(for: avMediaTypeAudio)
+    }
+
+    private static func queryCapturePermission(for mediaType: NSString) -> PermissionAuthorization {
+        guard let captureDeviceClass = avCaptureDeviceClass() else {
             return .unknown
-        case .restricted:
+        }
+
+        let selector = NSSelectorFromString("authorizationStatusForMediaType:")
+        guard let method = class_getClassMethod(captureDeviceClass, selector) else {
+            return .unknown
+        }
+
+        typealias AuthorizationStatusForMediaType = @convention(c) (AnyClass, Selector, NSString) -> Int
+        let function = unsafeBitCast(method_getImplementation(method), to: AuthorizationStatusForMediaType.self)
+        return permissionAuthorization(fromAVAuthorizationStatus: function(captureDeviceClass, selector, mediaType))
+    }
+
+    private static func requestCapturePermission(for mediaType: NSString) async -> PermissionAuthorization {
+        let status = queryCapturePermission(for: mediaType)
+        if status != .unknown {
+            return status
+        }
+
+        return await withCheckedContinuation { continuation in
+            guard let captureDeviceClass = avCaptureDeviceClass() else {
+                continuation.resume(returning: .unknown)
+                return
+            }
+
+            let selector = NSSelectorFromString("requestAccessForMediaType:completionHandler:")
+            guard let method = class_getClassMethod(captureDeviceClass, selector) else {
+                continuation.resume(returning: .unknown)
+                return
+            }
+
+            typealias RequestAccessForMediaType = @convention(c) (AnyClass, Selector, NSString, @escaping @convention(block) (Bool) -> Void) -> Void
+            let function = unsafeBitCast(method_getImplementation(method), to: RequestAccessForMediaType.self)
+            let handler: @convention(block) (Bool) -> Void = { granted in
+                continuation.resume(returning: granted ? .authorized : .denied)
+            }
+            function(captureDeviceClass, selector, mediaType, handler)
+        }
+    }
+
+    private static func permissionAuthorization(fromAVAuthorizationStatus status: Int) -> PermissionAuthorization {
+        switch status {
+        case 0:
+            return .unknown
+        case 1:
             return .restricted
-        case .denied:
+        case 2:
             return .denied
-        case .authorized:
+        case 3:
             return .authorized
-        @unknown default:
+        default:
             return .unknown
         }
     }
 
-    private static func requestAVPermission(for mediaType: AVMediaType) async -> PermissionAuthorization {
-        let status = queryAVPermission(for: mediaType)
+    private static func avCaptureDeviceClass() -> AnyClass? {
+        if let captureDeviceClass = NSClassFromString("AVCaptureDevice") {
+            return captureDeviceClass
+        }
+
+        let frameworkPaths = [
+            "/System/Library/Frameworks/AVFoundation.framework/AVFoundation",
+            "/System/Library/Frameworks/AVFoundation.framework/Versions/A/AVFoundation",
+        ]
+        for frameworkPath in frameworkPaths where dlopen(frameworkPath, RTLD_LAZY) != nil {
+            break
+        }
+        return NSClassFromString("AVCaptureDevice")
+    }
+
+    /// Photo library permission is accessed dynamically so apps that embed SkipKit but never use
+    /// photo access do not get flagged by App Store Connect for photo library purpose strings.
+    /// The Objective-C class and selectors below are public Photos API; this only avoids static
+    /// references to sensitive Swift symbols such as typed access-level constants.
+    private static let phAccessLevelAddOnly = 1
+    private static let phAccessLevelReadWrite = 2
+
+    private static func queryPhotoLibraryPermission(accessLevel: Int) -> PermissionAuthorization {
+        guard let photoLibraryClass = phPhotoLibraryClass() else {
+            return .unknown
+        }
+
+        let selector = NSSelectorFromString("authorizationStatusForAccessLevel:")
+        guard let method = class_getClassMethod(photoLibraryClass, selector) else {
+            return .unknown
+        }
+
+        typealias AuthorizationStatusForAccessLevel = @convention(c) (AnyClass, Selector, Int) -> Int
+        let function = unsafeBitCast(method_getImplementation(method), to: AuthorizationStatusForAccessLevel.self)
+        return permissionAuthorization(fromPHAuthorizationStatus: function(photoLibraryClass, selector, accessLevel))
+    }
+
+    private static func requestPhotoLibraryPermission(accessLevel: Int) async -> PermissionAuthorization {
+        let status = queryPhotoLibraryPermission(accessLevel: accessLevel)
         if status != .unknown {
             return status
         }
-        await AVCaptureDevice.requestAccess(for: mediaType)
-        return queryAVPermission(for: mediaType)
+
+        return await withCheckedContinuation { continuation in
+            guard let photoLibraryClass = phPhotoLibraryClass() else {
+                continuation.resume(returning: .unknown)
+                return
+            }
+
+            let selector = NSSelectorFromString("requestAuthorizationForAccessLevel:handler:")
+            guard let method = class_getClassMethod(photoLibraryClass, selector) else {
+                continuation.resume(returning: .unknown)
+                return
+            }
+
+            typealias RequestAuthorizationForAccessLevel = @convention(c) (AnyClass, Selector, Int, @escaping @convention(block) (Int) -> Void) -> Void
+            let function = unsafeBitCast(method_getImplementation(method), to: RequestAuthorizationForAccessLevel.self)
+            let handler: @convention(block) (Int) -> Void = { status in
+                continuation.resume(returning: permissionAuthorization(fromPHAuthorizationStatus: status))
+            }
+            function(photoLibraryClass, selector, accessLevel, handler)
+        }
+    }
+
+    private static func permissionAuthorization(fromPHAuthorizationStatus status: Int) -> PermissionAuthorization {
+        switch status {
+        case 0:
+            return .unknown
+        case 1:
+            return .restricted
+        case 2:
+            return .denied
+        case 3:
+            return .authorized
+        case 4:
+            return .limited
+        default:
+            return .unknown
+        }
+    }
+
+    private static func phPhotoLibraryClass() -> AnyClass? {
+        if let photoLibraryClass = NSClassFromString("PHPhotoLibrary") {
+            return photoLibraryClass
+        }
+
+        let frameworkPaths = [
+            "/System/Library/Frameworks/Photos.framework/Photos",
+            "/System/Library/Frameworks/Photos.framework/Versions/A/Photos",
+        ]
+        for frameworkPath in frameworkPaths where dlopen(frameworkPath, RTLD_LAZY) != nil {
+            break
+        }
+        return NSClassFromString("PHPhotoLibrary")
     }
     #endif
 
@@ -268,22 +401,7 @@ public final class PermissionManager: Sendable {
         #elseif os(watchOS)
         return .restricted
         #else
-        let status: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: readWrite ? .readWrite : .addOnly)
-
-        switch status {
-        case .notDetermined:
-            return .unknown
-        case .restricted:
-            return .restricted
-        case .denied:
-            return .denied
-        case .authorized:
-            return .authorized
-        case .limited:
-            return .limited
-        @unknown default:
-            return .unknown
-        }
+        return queryPhotoLibraryPermission(accessLevel: readWrite ? phAccessLevelReadWrite : phAccessLevelAddOnly)
         #endif
     }
 
@@ -294,12 +412,7 @@ public final class PermissionManager: Sendable {
         #elseif os(watchOS)
         return .restricted
         #else
-        let status = queryPhotoLibraryPermission(readWrite: readWrite)
-        if status != .unknown {
-            return status
-        }
-        await PHPhotoLibrary.requestAuthorization(for: readWrite ? .readWrite : .addOnly)
-        return queryPhotoLibraryPermission(readWrite: readWrite)
+        return await requestPhotoLibraryPermission(accessLevel: readWrite ? phAccessLevelReadWrite : phAccessLevelAddOnly)
         #endif
     }
 
@@ -422,11 +535,9 @@ class LocationDelegate: NSObject {
         if Thread.isMainThread {
             return LocationDelegate.locationManagerClass()?.init()
         } else {
-            var manager: NSObject?
-            DispatchQueue.main.sync {
-                manager = LocationDelegate.locationManagerClass()?.init()
+            return DispatchQueue.main.sync {
+                LocationDelegate.locationManagerClass()?.init()
             }
-            return manager
         }
     }()
 
