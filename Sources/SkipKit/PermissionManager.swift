@@ -422,9 +422,11 @@ class LocationDelegate: NSObject {
         if Thread.isMainThread {
             return LocationDelegate.locationManagerClass()?.init()
         } else {
-            return DispatchQueue.main.asyncAndWait {
-                LocationDelegate.locationManagerClass()?.init()
+            var manager: NSObject?
+            DispatchQueue.main.sync {
+                manager = LocationDelegate.locationManagerClass()?.init()
             }
+            return manager
         }
     }()
 
