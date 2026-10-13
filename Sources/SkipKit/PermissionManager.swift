@@ -581,7 +581,6 @@ class LocationDelegate: NSObject {
     @objc(locationManagerDidChangeAuthorization:)
     func locationManagerDidChangeAuthorization(_ manager: NSObject) {
         logger.debug("LocationDelegate.locationManagerDidChangeAuthorization")
-        // Core Location also reports the initial status before the user answers the prompt.
         guard let status = manager.value(forKey: "authorizationStatus") as? Int,
               status != Self.authorizationStatusNotDetermined
         else {
