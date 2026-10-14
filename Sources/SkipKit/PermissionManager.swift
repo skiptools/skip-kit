@@ -581,8 +581,15 @@ class LocationDelegate: NSObject {
     @objc(locationManagerDidChangeAuthorization:)
     func locationManagerDidChangeAuthorization(_ manager: NSObject) {
         logger.debug("LocationDelegate.locationManagerDidChangeAuthorization")
-        continuation?.resume(returning: ())
+        guard let status = manager.value(forKey: "authorizationStatus") as? Int,
+              status != Self.authorizationStatusNotDetermined
+        else {
+            return
+        }
+
+        let pendingContinuation = continuation
         continuation = nil // always clear the continuation between checks
+        pendingContinuation?.resume(returning: ())
     }
 }
 #endif
