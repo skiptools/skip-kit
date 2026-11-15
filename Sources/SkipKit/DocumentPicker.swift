@@ -305,7 +305,7 @@ private func resolvePickedDocument(
 
 #if !SKIP
 private struct ExportedDocument: FileDocument {
-    private static let contentTypes: [UTType] = [.data, .plainText, .commaSeparatedText, .pdf, .jpeg, .png]
+    private static let contentTypes: [UTType] = [.data, .plainText, .commaSeparatedText, .pdf, .jpeg, .png, .zip]
     static var readableContentTypes: [UTType] { contentTypes }
     static var writableContentTypes: [UTType] { contentTypes }
 
