@@ -36,7 +36,7 @@ public class Cache<Key: Hashable, Value> {
     }
 
     /// Sets the given value for the key in the cache
-    public func putValue(_ value: Value, for key: Key) {
+    public func putValue(_ value: Value?, for key: Key) {
         self[key] = value
     }
 
